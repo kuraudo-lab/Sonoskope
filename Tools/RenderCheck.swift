@@ -9,6 +9,12 @@ import SwiftUI
     _ = NSApplication.shared
     let destination = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
     try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: true)
+    let welcome = MonitorModel(persist: false, runsCollectors: false)
+    try render(
+      GettingStartedView(model: welcome, finish: {}, openSettings: {}),
+      to: destination.appendingPathComponent("getting-started.png"),
+      size: NSSize(width: 600, height: 710))
+    welcome.shutdown()
     let model = MonitorModel(persist: false)
     for scenario in DemoScenario.allCases {
       model.runDemo(scenario)

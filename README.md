@@ -63,3 +63,7 @@ Missing data, collector failures, and suspected causes are shown separately. [Re
 [Open an issue](https://github.com/kuraudo-lab/Sonoskope/issues) with your macOS version, Sonoskope version, audio device, and what you expected to see. Include a reviewed diagnostic export if useful—no meeting recording is needed. Feedback on installation, unclear messages, and false alarms is especially helpful.
 
 For contributors: [Build and run](docs/development.md) · [Architecture](docs/architecture.md) · [Product contract](docs/product.md) · [Tests and validation](docs/validation.md) · [Release process](docs/releasing.md)
+
+## License
+
+[MIT](LICENSE) © 2026 Sonoskope contributors.

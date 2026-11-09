@@ -51,3 +51,7 @@ No external package dependencies. No meeting-platform integrations or private AP
 ## Product demo
 
 See [Recording the product demo](demo-recording.md) for the isolated native presentation, automatic window recording, and README screenshot workflow.
+
+## Distribution signing
+
+See [Developer ID signing and notarization](distribution.md). Local preview builds keep their existing signing behavior. Public distribution requires explicit credentials and never falls back to a preview after failure.

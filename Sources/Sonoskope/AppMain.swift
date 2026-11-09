@@ -33,6 +33,7 @@ import SwiftUI
   private var statusItem: NSStatusItem!
   private var statusWindow: NSWindow?
   private var settingsWindow: NSWindow?
+  private var gettingStartedWindow: NSWindow?
   func applicationDidFinishLaunching(_ notification: Notification) {
     let smoke = CommandLine.arguments.contains("--smoke-test")
     // Explicit bounded hardware check; never enabled by the passive smoke test or CI.
@@ -96,7 +97,13 @@ import SwiftUI
       {
         model.runDemo(scenario)
       }
-      if !CommandLine.arguments.contains("--background") { showStatus() }
+      if !CommandLine.arguments.contains("--background") {
+        if model.demoScenario == nil && !UserDefaults.standard.bool(forKey: "gettingStartedSeen") {
+          showGettingStarted()
+        } else {
+          showStatus()
+        }
+      }
     }
     let appMenu = NSMenu()
     let item = NSMenuItem()
@@ -104,6 +111,8 @@ import SwiftUI
     let menu = NSMenu()
     menu.addItem(withTitle: L10n.tr("音频状态"), action: #selector(showStatus), keyEquivalent: "1")
     menu.addItem(withTitle: L10n.tr("设置…"), action: #selector(showSettings), keyEquivalent: ",")
+    menu.addItem(
+      withTitle: L10n.tr("使用指南…"), action: #selector(showGettingStarted), keyEquivalent: "")
     menu.addItem(.separator())
     menu.addItem(
       withTitle: L10n.tr("退出 Sonoskope"), action: #selector(NSApplication.terminate(_:)),
@@ -123,6 +132,9 @@ import SwiftUI
       let settings = menu.addItem(
         withTitle: L10n.tr("设置…"), action: #selector(showSettings), keyEquivalent: "")
       settings.target = self
+      let guide = menu.addItem(
+        withTitle: L10n.tr("使用指南…"), action: #selector(showGettingStarted), keyEquivalent: "")
+      guide.target = self
       menu.addItem(.separator())
       menu.addItem(
         withTitle: L10n.tr("退出 Sonoskope"), action: #selector(NSApplication.terminate(_:)),
@@ -141,6 +153,22 @@ import SwiftUI
         view: StatusView(model: model, openSettings: { [weak self] in self?.showSettings() }))
     }
     statusWindow?.makeKeyAndOrderFront(nil)
+    NSApp.activate(ignoringOtherApps: true)
+  }
+  @objc func showGettingStarted() {
+    if gettingStartedWindow == nil {
+      gettingStartedWindow = window(
+        title: L10n.tr("Sonoskope · 使用指南"), size: NSSize(width: 600, height: 710),
+        view: GettingStartedView(
+          model: model,
+          finish: { [weak self] in
+            UserDefaults.standard.set(true, forKey: "gettingStartedSeen")
+            self?.gettingStartedWindow?.close()
+            self?.showStatus()
+          },
+          openSettings: { [weak self] in self?.showSettings() }))
+    }
+    gettingStartedWindow?.makeKeyAndOrderFront(nil)
     NSApp.activate(ignoringOtherApps: true)
   }
   @objc func showSettings() {

@@ -62,3 +62,11 @@ The corrected lookup explicitly uses the installed resource bundle. Local regres
 - 69 regression tests pass. The shared branded image replaces both hard-coded waveform locations; the status window was rendered and inspected with the packaged icon. The menu bar uses the same icon at 18 points, without template tinting.
 - Local arm64 DMG mounts read-only with an Applications link. The PKG expands to a single Sonoskope.app payload, targets `/Applications`, disables relocation and has no installer scripts. Payload signatures, version, architecture and icon are checked, and both containers contain identical executable/icon bytes.
 - Installation into the system Applications directory and clean-machine Gatekeeper acceptance are not claimed by payload inspection. Distributed app builds remain ad-hoc signed; DMG/PKG containers are unsigned and not notarized.
+
+## First-use guide and distribution tooling (unreleased)
+
+- Added a bilingual first-use guide with a confirmed ten-second microphone test, explicit app-output opt-in, and isolated demo entry. Displaying the guide does not initiate capture or request audio permission. It can be reopened from the menu-bar menu; ordinary background launches and diagnostic CLI modes skip it.
+- Swift tests and the release app build passed. Both guide translations were rendered from the actual SwiftUI view and visually inspected. Native first-install permission dialogs for this guide remain unverified.
+- Added MIT LICENSE and bundled it with the app.
+- Added Developer ID signing, hardened runtime with the audio-input entitlement, secure timestamps, notarytool submission/status gates, stapling, and Gatekeeper checks. Mocked tests passed for wrong identity, rejected/pending submissions and the accepted/stapled path, including non-default keychains.
+- The preview ZIP/DMG/PKG pipeline, relocated-app localization checks, and matching installer-payload checks passed on arm64. Actual Developer ID signing/notarization and clean-machine installation remain pending certificate and keychain-profile setup. No existing public download has been upgraded or relabeled as notarized by this tooling change.

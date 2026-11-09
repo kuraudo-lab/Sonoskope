@@ -63,3 +63,7 @@ Sonoskope 提供的是**本机证据和可能的解释**，不提供整条通话
 欢迎[提交反馈](https://github.com/kuraudo-lab/Sonoskope/issues)，附上 macOS 版本、Sonoskope 版本、音频设备以及预期表现。必要时附上检查过的诊断导出，无需提供会议录音。安装问题、难懂的提示和误报尤其值得反馈。
 
 开发者文档：[构建与运行](docs/development.md) · [架构](docs/architecture.md) · [产品约定](docs/product.md) · [验证记录](docs/validation.md) · [发布流程](docs/releasing.md)
+
+## 许可证
+
+[MIT](LICENSE) © 2026 Sonoskope contributors.

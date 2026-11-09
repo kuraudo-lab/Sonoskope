@@ -21,7 +21,11 @@ jobs:
           - runner: macos-15-intel
             arch: x86_64
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 20
+    timeout-minutes: 90
+    env:
+      SONOSKOPE_DISTRIBUTION: ${{ vars.SONOSKOPE_DISTRIBUTION || 'preview' }}
+      SONOSKOPE_APPLICATION_IDENTITY: ${{ vars.SONOSKOPE_APPLICATION_IDENTITY }}
+      SONOSKOPE_INSTALLER_IDENTITY: ${{ vars.SONOSKOPE_INSTALLER_IDENTITY }}
     steps:
       - uses: actions/checkout@v4
       - name: Validate version tag
@@ -34,10 +38,22 @@ jobs:
           echo "VERSION=${RELEASE_TAG#v}" >> "$GITHUB_ENV"
       - name: Run regression tests
         run: swift test
+      - name: Prepare Developer ID signing
+        if: env.SONOSKOPE_DISTRIBUTION == 'developer-id'
+        env:
+          SONOSKOPE_CERTIFICATES_P12: ${{ secrets.SONOSKOPE_CERTIFICATES_P12 }}
+          SONOSKOPE_CERTIFICATES_PASSWORD: ${{ secrets.SONOSKOPE_CERTIFICATES_PASSWORD }}
+          SONOSKOPE_NOTARY_KEY: ${{ secrets.SONOSKOPE_NOTARY_KEY }}
+          SONOSKOPE_NOTARY_KEY_ID: ${{ secrets.SONOSKOPE_NOTARY_KEY_ID }}
+          SONOSKOPE_NOTARY_ISSUER_ID: ${{ secrets.SONOSKOPE_NOTARY_ISSUER_ID }}
+        run: bash scripts/ci-signing.sh setup
       - name: Build and package app
         env:
           RELEASE_ARCH: ${{ matrix.arch }}
         run: bash scripts/package-release.sh "$VERSION" "$RELEASE_ARCH"
+      - name: Remove temporary signing credentials
+        if: always() && env.SONOSKOPE_DISTRIBUTION == 'developer-id'
+        run: bash scripts/ci-signing.sh cleanup
       - name: Upload distribution files
         uses: actions/upload-artifact@v4
         with:
@@ -63,7 +79,7 @@ jobs:
           pattern: Sonoskope-*
           merge-multiple: true
           path: release-assets
-      - name: Verify assets and publish developer preview
+      - name: Verify assets and publish release candidate
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ github.ref_name }}
