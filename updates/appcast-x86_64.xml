@@ -1,0 +1,16 @@
+<?xml version='1.0' encoding='utf-8'?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+  <channel>
+    <title>Sonoskope updates (x86_64)</title>
+    <link>https://github.com/kuraudo-lab/Sonoskope/releases</link>
+    <item>
+      <title>Sonoskope 0.2.0</title>
+      <pubDate>Mon, 09 Nov 2026 09:27:12 +0000</pubDate>
+      <sparkle:version>9</sparkle:version>
+      <sparkle:shortVersionString>0.2.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.2</sparkle:minimumSystemVersion>
+      <description>First-run guide, a compact Overview / Trends / Issues workspace, and signed updates that install only when you choose Install and Relaunch.</description>
+      <enclosure sparkle:edSignature="PBbnc8EBVdBpcM0loKl6gOYcMNlB/qVKQYBJnLYCk9pE93owdLi3HPaOs41MhQ5Q/LmmLGP5jWOS94woaXaTDg==" url="https://github.com/kuraudo-lab/Sonoskope/releases/download/v0.2.0/Sonoskope-0.2.0-macos-x86_64.zip" length="3982775" type="application/octet-stream" />
+    </item>
+  </channel>
+</rss>
