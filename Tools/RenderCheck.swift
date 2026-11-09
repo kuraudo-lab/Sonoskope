@@ -9,20 +9,51 @@ import SwiftUI
     _ = NSApplication.shared
     let destination = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
     try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: true)
+    // Construction alone never starts the updater or accesses the network.
+    let updater = SoftwareUpdater()
+    try render(SoftwareUpdateView(updater: updater).background(Color(nsColor: .windowBackgroundColor)),
+      to: destination.appendingPathComponent("software-updates.png"),
+      size: NSSize(width: 520, height: 400))
     let welcome = MonitorModel(persist: false, runsCollectors: false)
-    try render(
-      GettingStartedView(model: welcome, finish: {}, openSettings: {}),
-      to: destination.appendingPathComponent("getting-started.png"),
-      size: NSSize(width: 600, height: 710))
+    for step in OnboardingStep.allCases {
+      try render(
+        GettingStartedView(model: welcome, initialStep: step, finish: {}, openSettings: {}),
+        to: destination.appendingPathComponent(
+          "getting-started-" + String(step.rawValue + 1) + ".png"),
+        size: NSSize(width: 640, height: 620))
+    }
     welcome.shutdown()
-    let model = MonitorModel(persist: false)
+    let model = MonitorModel(persist: false, runsCollectors: false)
     for scenario in DemoScenario.allCases {
       model.runDemo(scenario)
       try render(
         StatusView(model: model, openSettings: {}),
         to: destination.appendingPathComponent(scenario.rawValue + ".png"),
-        size: NSSize(width: 520, height: 740))
+        size: NSSize(width: 640, height: 620))
     }
+    model.runDemo(.correlated)
+    let navigation = StatusNavigation()
+    navigation.section = .trends
+    try render(
+      StatusView(model: model, navigation: navigation, openSettings: {}),
+      to: destination.appendingPathComponent("workspace-trends.png"),
+      size: NSSize(width: 640, height: 620))
+    navigation.section = .issues
+    try render(
+      StatusView(model: model, navigation: navigation, openSettings: {}),
+      to: destination.appendingPathComponent("workspace-issues.png"),
+      size: NSSize(width: 640, height: 620))
+    if let id = model.incidents.first?.id { navigation.showIncident(id) }
+    try render(
+      StatusView(model: model, navigation: navigation, openSettings: {}),
+      to: destination.appendingPathComponent("workspace-evidence.png"),
+      size: NSSize(width: 640, height: 620))
+    NSApp.appearance = NSAppearance(named: .darkAqua)
+    try render(
+      StatusView(model: model, openSettings: {}),
+      to: destination.appendingPathComponent("workspace-dark.png"),
+      size: NSSize(width: 640, height: 620))
+    NSApp.appearance = NSAppearance(named: .aqua)
     model.runDemo(.correlated)
     try render(
       TelemetryCharts(
@@ -58,7 +89,7 @@ import SwiftUI
     try render(
       StatusView(model: automatic, openSettings: {}),
       to: destination.appendingPathComponent("automatic-waiting.png"),
-      size: NSSize(width: 520, height: 740))
+      size: NSSize(width: 640, height: 620))
     fixture.inputProcesses = [
       .init(pid: 1_234_567, bundleID: "com.apple.VoiceMemos", running: true, devices: [100]),
       .init(pid: 1_234_568, bundleID: "com.microsoft.teams2", running: true, devices: [100]),
@@ -84,7 +115,13 @@ import SwiftUI
     try render(
       StatusView(model: automatic, openSettings: {}),
       to: destination.appendingPathComponent("automatic-active.png"),
-      size: NSSize(width: 520, height: 900))
+      size: NSSize(width: 640, height: 620))
+    let activeTrends = StatusNavigation()
+    activeTrends.section = .trends
+    try render(
+      StatusView(model: automatic, navigation: activeTrends, openSettings: {}),
+      to: destination.appendingPathComponent("automatic-trends.png"),
+      size: NSSize(width: 640, height: 620))
     try render(
       TelemetryCharts(
         audio: automatic.audioChartPoints, network: [], endingAt: automatic.chartEnd,
@@ -106,7 +143,23 @@ import SwiftUI
     try render(
       StatusView(model: denied, openSettings: {}),
       to: destination.appendingPathComponent("microphone-permission.png"),
-      size: NSSize(width: 520, height: 740))
+      size: NSSize(width: 640, height: 620))
+    try render(
+      GettingStartedView(model: denied, initialStep: .ready, finish: {}, openSettings: {}),
+      to: destination.appendingPathComponent("getting-started-denied.png"),
+      size: NSSize(width: 640, height: 620))
+    let passive = MonitorModel(persist: false, runsCollectors: false)
+    passive.acceptHardwareSnapshot(fixture)
+    try render(
+      StatusView(model: passive, openSettings: {}),
+      to: destination.appendingPathComponent("workspace-passive.png"),
+      size: NSSize(width: 640, height: 620))
+    passive.togglePause()
+    try render(
+      StatusView(model: passive, openSettings: {}),
+      to: destination.appendingPathComponent("workspace-paused.png"),
+      size: NSSize(width: 640, height: 620))
+    passive.shutdown()
     denied.shutdown()
     automatic.shutdown()
     model.shutdown()
@@ -128,6 +181,19 @@ import SwiftUI
       throw RenderError.failed
     }
     host.cacheDisplay(in: host.bounds, to: bitmap)
+    // Record scroll overflow as well as image size: a full-size screenshot alone
+    // can conceal content below the fold.
+    func scrollOverflows(_ view: NSView) -> [Int] {
+      guard !view.isHidden else { return [] }
+      let own: [Int]
+      if let scroll = view as? NSScrollView, let document = scroll.documentView {
+        own = [Int(max(0, document.frame.height - scroll.contentView.bounds.height))]
+      } else {
+        own = []
+      }
+      return own + view.subviews.flatMap(scrollOverflows)
+    }
+    print("Scroll overflow", url.lastPathComponent, scrollOverflows(host))
     guard let data = bitmap.representation(using: .png, properties: [:]), data.count > 1000 else {
       throw RenderError.failed
     }

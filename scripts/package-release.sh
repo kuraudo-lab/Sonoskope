@@ -26,8 +26,11 @@ if [[ "$actual_arch" != "$architecture" ]]; then
   exit 1
 fi
 if [[ "$distribution" == developer-id ]]; then
-  submission="$(mktemp -d "$PWD/.build/notary-app.XXXXXX")"
-  trap 'rm -rf "$submission"' EXIT
+  mkdir -p .local/notarization
+  submission="$(mktemp -d "$PWD/.local/notarization/app-${version}-${architecture}.XXXXXX")"
+  # Preserve the exact submission and app if Apple's queue outlasts this run.
+  ditto dist/Sonoskope.app "$submission/Sonoskope.app"
+  printf 'Preserved app submission: %s\n' "$submission"
   ditto -c -k --sequesterRsrc --keepParent dist/Sonoskope.app "$submission/app.zip"
   bash scripts/notarize-file.sh "$submission/app.zip" "$PWD/dist/Sonoskope.app"
   spctl --assess --type execute --verbose=2 dist/Sonoskope.app

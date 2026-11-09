@@ -1,274 +1,13 @@
 import SonoskopeCore
 import SwiftUI
 
-struct StatusView: View {
-  @Bindable var model: MonitorModel
-  var openSettings: () -> Void
-  @State private var confirmMicrophone = false
-  @State private var showDetails = false
-  var body: some View {
-    VStack(spacing: 0) {
-      HStack {
-        Image(nsImage: BrandAssets.applicationIcon).resizable()
-          .frame(width: 28, height: 28).clipShape(RoundedRectangle(cornerRadius: 6))
-          .accessibilityHidden(true)
-        Text("Sonoskope").font(.headline)
-        Spacer()
-        if model.demoScenario != nil {
-          Text(L10n.tr("模拟数据")).font(.caption).foregroundStyle(.orange)
-        }
-        Button(action: openSettings) { Image(systemName: "gearshape") }.help(L10n.tr("设置"))
-          .accessibilityLabel(L10n.tr("打开设置"))
-      }.padding(18)
-      Divider()
-      ScrollView {
-        VStack(alignment: .leading, spacing: 20) {
-          VStack(alignment: .leading, spacing: 8) {
-            Text(model.title).font(.title2.weight(.semibold)).accessibilityIdentifier(
-              "health-title")
-            Text(model.subtitle).font(.callout).foregroundStyle(.secondary)
-          }
-          if let scenario = model.demoScenario {
-            HStack {
-              Text(scenario.label).font(.callout)
-              Spacer()
-              Button(L10n.tr("返回实时监测")) { model.exitDemo() }
-            }.padding(10).background(.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
-          }
-          if model.demoScenario == nil {
-            VStack(alignment: .leading, spacing: 10) {
-              Text(L10n.tr("音频设备")).font(.callout.weight(.medium))
-              AudioDeviceRow(
-                role: model.inputDeviceRole, device: model.currentInputDevice,
-                symbol: "mic", unavailable: L10n.tr("无可用输入"))
-              AudioDeviceRow(
-                role: L10n.tr("系统默认输出"), device: model.hardware.output,
-                symbol: "speaker.wave.2", unavailable: L10n.tr("无可用输出"))
-              Text(L10n.tr("应用可能使用不同的输出设备；输出电平是所选应用的数字音频。"))
-                .font(.caption).foregroundStyle(.secondary)
-            }.padding(12).background(
-              .quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 8))
-          }
-          VStack(spacing: 14) {
-            DirectionRow(
-              title: L10n.tr("我的声音"), icon: "mic", status: model.inputReading,
-              detail: model.demoScenario == nil
-                ? L10n.tr("本机输入电平；不是远端收到的音量。") : L10n.tr("演示不采集麦克风"))
-            Divider()
-            DirectionRow(
-              title: L10n.tr("我听到的声音"), icon: "headphones", status: model.outputReading,
-              detail: model.demoScenario == nil
-                ? L10n.tr("本机数字输出；不是扬声器实际发声。")
-                : L10n.tr("演示不采集应用输出"))
-          }
-          if model.automaticInputNeedsPermission {
-            VStack(alignment: .leading, spacing: 6) {
-              Button(L10n.tr("重新检查麦克风权限")) { model.setAutomaticInputEnabled(true) }
-              Text(L10n.tr("若未弹出授权提示，请到系统设置 → 隐私与安全性 → 麦克风中允许 Sonoskope。"))
-                .font(.caption).foregroundStyle(.secondary)
-            }
-          }
-          Divider()
-          VStack(alignment: .leading, spacing: 10) {
-            EvidenceRow(label: L10n.tr("蓝牙"), value: bluetoothSummary)
-            EvidenceRow(
-              label: L10n.tr("网络"),
-              value: model.demoScenario == nil ? model.network.probe : L10n.tr("模拟状态见问题依据"))
-            if model.demoScenario == nil {
-              Text(model.network.path).font(.caption).foregroundStyle(.secondary)
-            }
-          }
-          if let incident = model.selectedIncident {
-            IncidentView(incident: incident)
-          } else {
-            Text(L10n.tr("尚无问题记录。没有发现异常，不代表整条通话链路已验证正常。"))
-              .font(.callout).foregroundStyle(.secondary)
-          }
-          TelemetryCharts(
-            audio: model.audioChartPoints, network: model.networkChartPoints,
-            endingAt: model.chartEnd, incidentAt: model.selectedIncident?.started,
-            audioEnabled: model.outputEnabled || model.microphoneRunning
-              || model.automaticInputEnabled
-              || model.demoScenario != nil,
-            networkEnabled: model.networkEnabled || model.demoScenario != nil)
-          if model.incidents.count > 1 {
-            Picker(
-              L10n.tr("问题记录"),
-              selection: Binding(
-                get: { model.selectedIncident?.id }, set: { model.selectedIncidentID = $0 })
-            ) {
-              ForEach(model.incidents) { item in
-                Text(
-                  item.started.uiFormatted(date: .omitted, time: .standard) + " · "
-                    + item.title.localized
-                )
-                .tag(Optional(item.id))
-              }
-            }
-          }
-          DisclosureGroup(L10n.tr("当前采集范围与详细指标"), isExpanded: $showDetails) {
-            details.padding(.top, 8)
-          }.font(.callout)
-          if !model.feedback.isEmpty {
-            Text(model.feedback).font(.caption).foregroundStyle(.secondary).accessibilityIdentifier(
-              "feedback")
-          }
-        }.padding(20)
-      }
-      Divider()
-      VStack(spacing: 10) {
-        HStack {
-          Menu(L10n.tr("刚才声音有问题")) {
-            Button(L10n.tr("别人听不清我")) { model.mark(.input) }
-            Button(L10n.tr("我听不清别人")) { model.mark(.output) }
-          }
-          Spacer()
-          if model.automaticInputEnabled {
-            Button(L10n.tr("关闭自动监测")) { model.setAutomaticInputEnabled(false) }
-          } else if model.microphoneRunning {
-            Button(L10n.tr("停止麦克风测试")) { model.stopMicrophone() }
-          } else {
-            Menu(L10n.tr("麦克风…")) {
-              Button(L10n.tr("自动监测设置…"), action: openSettings)
-              Button(L10n.tr("10 秒测试…")) { confirmMicrophone = true }
-                .disabled(model.paused || model.demoScenario != nil)
-            }
-          }
-        }
-        HStack {
-          Button(
-            model.demoScenario != nil
-              ? L10n.tr("结束演示") : model.paused ? L10n.tr("恢复监测") : L10n.tr("暂停监测")
-          ) {
-            model.togglePause()
-          }
-          .buttonStyle(.link)
-          Spacer()
-          Button(L10n.tr("导出问题记录…")) { model.exportReport() }.buttonStyle(.link).disabled(
-            model.incidents.isEmpty)
-        }.font(.caption)
-      }.padding(16)
-    }
-    .frame(minWidth: 450, idealWidth: 520, minHeight: 520, idealHeight: 730)
-    .background(Color(nsColor: .windowBackgroundColor))
-    .confirmationDialog(
-      L10n.tr("开始 10 秒本地麦克风测试？"), isPresented: $confirmMicrophone, titleVisibility: .visible
-    ) {
-      Button(L10n.tr("开始 10 秒测试")) { model.startMicrophone() }
-      Button(L10n.tr("取消"), role: .cancel) {}
-    } message: {
-      Text(L10n.tr("将使用系统默认麦克风，可能改变蓝牙耳机模式。请先安静约 2 秒，再正常讲话。结果仅代表到达 Mac 的声音；不保存录音。"))
-    }
-  }
-  private var bluetoothSummary: String {
-    guard model.demoScenario == nil else { return L10n.tr("模拟状态见问题依据") }
-    let audioBluetooth = model.hardware.devices.filter { $0.isBluetooth }
-    guard !audioBluetooth.isEmpty else { return L10n.tr("未发现蓝牙音频设备") }
-    if !model.bluetoothEnabled { return L10n.tr("音频设备可见 · RSSI 未启用") }
-    if model.hardware.bluetooth.isEmpty { return L10n.tr("信号读数不可用／未授权") }
-    return model.hardware.bluetooth.map { item in
-      item.name + " " + (item.rssi.map { "\($0) dBm" } ?? L10n.tr("RSSI 不可用"))
-    }.joined(separator: L10n.tr("；"))
-  }
-  private func names(_ ids: [UInt32]) -> String {
-    let names = ids.compactMap { id in model.hardware.devices.first { $0.id == id }?.name }
-    return names.isEmpty ? L10n.tr("未返回") : names.joined(separator: L10n.tr("、"))
-  }
-  @ViewBuilder private var details: some View {
-    if model.demoScenario != nil {
-      Text(L10n.tr("演示事件与真实采集隔离，不会保存到真实历史或发送系统通知。"))
-    } else {
-      VStack(alignment: .leading, spacing: 8) {
-        Text(
-          L10n.tr("输入：按需自动监测或手动测试。应用输出：")
-            + (model.outputEnabled ? L10n.tr("已开启") : L10n.tr("未开启")) + L10n.tr("。"))
-        Text(L10n.tr("设备每 2 秒轮询，短于轮询间隔的断连可能漏检。"))
-        Text(L10n.tr("仅在输入或输出电平活跃时探测：www.apple.com:443，每次完成后间隔 5 秒；不是会议延迟。"))
-        Text(model.network.wifi)
-        ForEach(model.hardware.devices) { device in
-          Text(
-            L10n.tr(
-              "\(device.name) · \(device.transport) · \(Int(device.sampleRate)) Hz · 输入 \(device.inputChannels) / 输出 \(device.outputChannels) 声道"
-            )
-          )
-        }
-        if let measurement = model.outputMeasurement {
-          Text(
-            String(
-              format: L10n.tr("输出峰值 %.1f dBFS · 近满幅 %.2f%% · %@"), measurement.peakDB,
-              measurement.clippingFraction * 100,
-              measurement.date.uiFormatted(date: .omitted, time: .standard)))
-        }
-        Text(L10n.tr("当前音频进程")).fontWeight(.medium)
-        ForEach(model.hardware.processes.filter { $0.inputActive || $0.outputActive }) { process in
-          VStack(alignment: .leading, spacing: 2) {
-            Text(
-              L10n.tr(
-                "\(process.name) · PID \(process.pid) · 输入 \(process.inputActive ? L10n.tr("活动") : L10n.tr("无")) / 输出 \(process.outputActive ? L10n.tr("活动") : L10n.tr("无"))"
-              )
-            )
-            Text(
-              L10n.tr("输入关联：") + names(process.inputDevices) + L10n.tr("；输出关联：")
-                + names(process.outputDevices))
-          }
-        }
-        Text(L10n.tr("进程输入活动不等于正在讲话；默认输入不一定是会议应用所选麦克风。输入／输出关联设备仅按系统实际返回列表显示。"))
-      }.font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
-    }
-  }
-}
-
-private struct AudioDeviceRow: View {
-  let role: String
-  let device: AudioDeviceInfo?
-  let symbol: String
-  let unavailable: String
-  var body: some View {
-    HStack(alignment: .top, spacing: 10) {
-      Image(systemName: symbol).frame(width: 22).foregroundStyle(.secondary)
-      VStack(alignment: .leading, spacing: 2) {
-        Text(role).font(.caption).foregroundStyle(.secondary)
-        Text(device?.name ?? unavailable).font(.callout.weight(.medium)).textSelection(.enabled)
-      }
-      Spacer(minLength: 0)
-      if let device { Text(device.transport).font(.caption).foregroundStyle(.secondary) }
-    }
-  }
-}
-private struct DirectionRow: View {
-  let title: String
-  let icon: String
-  let status: String
-  let detail: String
-  var body: some View {
-    HStack(alignment: .top, spacing: 12) {
-      Image(systemName: icon).font(.title3).frame(width: 24).accessibilityHidden(true)
-      VStack(alignment: .leading, spacing: 4) {
-        Text(title).font(.callout.weight(.medium))
-        Text(status).font(.callout)
-        Text(detail).font(.caption).foregroundStyle(.secondary)
-      }
-      Spacer(minLength: 0)
-    }
-  }
-}
-private struct EvidenceRow: View {
-  let label: String
-  let value: String
-  var body: some View {
-    HStack(alignment: .firstTextBaseline) {
-      Text(label).foregroundStyle(.secondary).frame(minWidth: 68, alignment: .leading)
-      Text(value).frame(maxWidth: .infinity, alignment: .trailing)
-    }.font(.callout)
-  }
-}
-private struct IncidentView: View {
+struct IncidentDetailView: View {
   let incident: Incident
-  @State private var expanded = false
+  @State private var expanded = true
   var body: some View {
     VStack(alignment: .leading, spacing: 10) {
       HStack {
-        Text(L10n.tr("最近问题")).font(.caption).foregroundStyle(.secondary)
+        Text(incident.confidenceLabel).font(.caption).foregroundStyle(.secondary)
         Spacer()
         Text(incident.isActive ? L10n.tr("待确认／持续观察") : L10n.tr("事件已结束")).font(.caption)
           .foregroundStyle(
@@ -294,6 +33,7 @@ private struct IncidentView: View {
                 + event.message.localized)
           }
         }.font(.caption).textSelection(.enabled).padding(.top, 8)
+          .frame(maxWidth: .infinity, alignment: .leading)
       }.font(.callout)
       Divider()
       Text(L10n.tr("建议下一步")).font(.caption).foregroundStyle(.secondary)
@@ -305,8 +45,20 @@ private struct IncidentView: View {
 
 struct SettingsView: View {
   @Bindable var model: MonitorModel
+  var updater: SoftwareUpdater? = nil
+  var openUpdates: () -> Void = {}
   var body: some View {
     Form {
+      if let updater {
+        Section(L10n.tr("软件更新")) {
+          Toggle(L10n.tr("自动检查并下载更新"), isOn: Binding(get: { updater.automatic }, set: updater.setAutomatic))
+          HStack {
+            Text(updater.status).font(.caption).foregroundStyle(.secondary)
+            Spacer()
+            Button(L10n.tr(updater.isReady ? "更新已准备好" : "检查更新…"), action: openUpdates)
+          }
+        }
+      }
       Section(L10n.tr("运行")) {
         Toggle(
           L10n.tr("登录后启动"), isOn: Binding(get: { model.loginEnabled }, set: { model.setLogin($0) }))

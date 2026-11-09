@@ -15,6 +15,7 @@ import plistlib, shutil, subprocess, sys
 binary=Path(sys.argv[1]); app=Path(sys.argv[2])/'SonoskopeDemo.app'
 (app/'Contents/MacOS').mkdir(parents=True)
 resources=app/'Contents/Resources'; resources.mkdir()
+framework=next(Path('.build/artifacts/sonoskope/Sparkle').rglob('macos-arm64_x86_64/Sparkle.framework'))
 modules=binary/'Modules'
 if not modules.exists(): modules=binary
 library=binary/'libSonoskopeCore.a'
@@ -22,13 +23,14 @@ objects=[str(library)] if library.exists() else [str(p) for p in (binary/'Sonosk
 if not objects: raise SystemExit('Missing built core objects')
 sources=[str(p) for p in Path('Sources/Sonoskope').glob('*.swift') if p.name!='AppMain.swift']
 arch=subprocess.check_output(['lipo','-archs',str(binary/'Sonoskope')],text=True).strip()
-subprocess.run(['xcrun','swiftc','-parse-as-library','-swift-version','5','-target',arch+'-apple-macos14.2','-I',str(modules),*sources,'Tools/DemoPresentation.swift',*objects,'-o',str(app/'Contents/MacOS/SonoskopeDemo')],check=True)
+subprocess.run(['xcrun','swiftc','-parse-as-library','-swift-version','5','-target',arch+'-apple-macos14.2','-I',str(modules),'-F',str(framework.parent),'-framework','Sparkle','-Xlinker','-rpath','-Xlinker','@executable_path/../Frameworks',*sources,'Tools/DemoPresentation.swift',*objects,'-o',str(app/'Contents/MacOS/SonoskopeDemo')],check=True)
 with open('App/Info.plist','rb') as f: info=plistlib.load(f)
 info.update(CFBundleIdentifier='lab.kuraudo.Sonoskope.Demo',CFBundleExecutable='SonoskopeDemo',CFBundleName='Sonoskope Demo')
 with (app/'Contents/Info.plist').open('wb') as f: plistlib.dump(info,f)
 shutil.copy2('.build/AppIcon.icns',resources/'AppIcon.icns')
 for bundle in list(binary.glob('*.bundle'))+list(Path('App').glob('*.lproj')):
     shutil.copytree(bundle,resources/bundle.name)
+subprocess.run(['bash','scripts/embed-sparkle.sh',str(app),str(framework)],check=True)
 subprocess.run(['codesign','--force','--sign','-',str(app)],check=True)
 PY
 "$run_dir/SonoskopeDemo.app/Contents/MacOS/SonoskopeDemo" "$run_dir" -AppleLanguages '(en)' >"$run_dir/app.log" 2>&1 &

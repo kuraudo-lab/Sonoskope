@@ -28,8 +28,12 @@ import SwiftUI
   }
 }
 
-@MainActor final class AppDelegate: NSObject, NSApplicationDelegate {
+@MainActor final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
   private var model: MonitorModel!
+  private let navigation = StatusNavigation()
+  private let onboarding = OnboardingProgress()
+  private let updater = SoftwareUpdater()
+  private var updateWindow: NSWindow?
   private var statusItem: NSStatusItem!
   private var statusWindow: NSWindow?
   private var settingsWindow: NSWindow?
@@ -39,9 +43,14 @@ import SwiftUI
     // Explicit bounded hardware check; never enabled by the passive smoke test or CI.
     let microphoneCheck = !smoke && CommandLine.arguments.contains("--microphone-check")
     model = MonitorModel(persist: !smoke && !microphoneCheck)
+    updater.present = { [weak self] in self?.showUpdates() }
+    updater.willInstall = { [weak self] in self?.model.shutdown() }
+    model.onDemoChange = { [weak self] active in self?.updater.setSuspended(active) }
     model.notifications.openIncident = { [weak self] id in
-      self?.model.selectedIncidentID = id
-      self?.showStatus()
+      guard let self else { return }
+      if self.model.demoScenario != nil { self.model.exitDemo() }
+      self.navigation.showIncident(id)
+      self.showStatus()
     }
     statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
     NSApp.applicationIconImage = BrandAssets.applicationIcon
@@ -98,12 +107,13 @@ import SwiftUI
         model.runDemo(scenario)
       }
       if !CommandLine.arguments.contains("--background") {
-        if model.demoScenario == nil && !UserDefaults.standard.bool(forKey: "gettingStartedSeen") {
+        if model.demoScenario == nil && onboarding.shouldPresent {
           showGettingStarted()
         } else {
           showStatus()
         }
       }
+      if model.demoScenario == nil { updater.start() }
     }
     let appMenu = NSMenu()
     let item = NSMenuItem()
@@ -111,6 +121,7 @@ import SwiftUI
     let menu = NSMenu()
     menu.addItem(withTitle: L10n.tr("音频状态"), action: #selector(showStatus), keyEquivalent: "1")
     menu.addItem(withTitle: L10n.tr("设置…"), action: #selector(showSettings), keyEquivalent: ",")
+    menu.addItem(withTitle: L10n.tr("检查更新…"), action: #selector(showUpdates), keyEquivalent: "")
     menu.addItem(
       withTitle: L10n.tr("使用指南…"), action: #selector(showGettingStarted), keyEquivalent: "")
     menu.addItem(.separator())
@@ -132,6 +143,8 @@ import SwiftUI
       let settings = menu.addItem(
         withTitle: L10n.tr("设置…"), action: #selector(showSettings), keyEquivalent: "")
       settings.target = self
+      let update = menu.addItem(withTitle: L10n.tr(updater.isReady ? "更新已准备好" : "检查更新…"), action: #selector(showUpdates), keyEquivalent: "")
+      update.target = self
       let guide = menu.addItem(
         withTitle: L10n.tr("使用指南…"), action: #selector(showGettingStarted), keyEquivalent: "")
       guide.target = self
@@ -149,8 +162,11 @@ import SwiftUI
   @objc func showStatus() {
     if statusWindow == nil {
       statusWindow = window(
-        title: L10n.tr("Sonoskope · 音频状态"), size: NSSize(width: 520, height: 740),
-        view: StatusView(model: model, openSettings: { [weak self] in self?.showSettings() }))
+        title: L10n.tr("Sonoskope · 音频状态"), size: NSSize(width: 640, height: 620),
+        view: StatusView(
+          model: model, navigation: navigation, updater: updater,
+          openUpdates: { [weak self] in self?.showUpdates() },
+          openSettings: { [weak self] in self?.showSettings() }))
     }
     statusWindow?.makeKeyAndOrderFront(nil)
     NSApp.activate(ignoringOtherApps: true)
@@ -158,15 +174,17 @@ import SwiftUI
   @objc func showGettingStarted() {
     if gettingStartedWindow == nil {
       gettingStartedWindow = window(
-        title: L10n.tr("Sonoskope · 使用指南"), size: NSSize(width: 600, height: 710),
+        title: L10n.tr("Sonoskope · 使用指南"), size: NSSize(width: 640, height: 620),
         view: GettingStartedView(
           model: model,
           finish: { [weak self] in
-            UserDefaults.standard.set(true, forKey: "gettingStartedSeen")
+            self?.onboarding.acknowledge()
             self?.gettingStartedWindow?.close()
+            self?.navigation.showOverview()
             self?.showStatus()
           },
           openSettings: { [weak self] in self?.showSettings() }))
+      gettingStartedWindow?.delegate = self
     }
     gettingStartedWindow?.makeKeyAndOrderFront(nil)
     NSApp.activate(ignoringOtherApps: true)
@@ -175,10 +193,18 @@ import SwiftUI
     if settingsWindow == nil {
       settingsWindow = window(
         title: L10n.tr("Sonoskope · 设置"), size: NSSize(width: 540, height: 700),
-        view: SettingsView(model: model))
+        view: SettingsView(model: model, updater: updater, openUpdates: { [weak self] in self?.showUpdates() }))
     }
     settingsWindow?.makeKeyAndOrderFront(nil)
     NSApp.activate(ignoringOtherApps: true)
+  }
+  @objc func showUpdates() {
+    if updateWindow == nil {
+      updateWindow = window(title: L10n.tr("软件更新"), size: NSSize(width: 520, height: 400), view: SoftwareUpdateView(updater: updater))
+    }
+    updateWindow?.makeKeyAndOrderFront(nil)
+    NSApp.activate(ignoringOtherApps: true)
+    updater.check()
   }
   private func window<V: View>(title: String, size: NSSize, view: V) -> NSWindow {
     let window = NSWindow(
@@ -192,5 +218,12 @@ import SwiftUI
     return window
   }
   func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
+  func windowWillClose(_ notification: Notification) {
+    if let window = notification.object as? NSWindow, window === gettingStartedWindow {
+      // Closing is a skip; replay creates a fresh guide without changing capture.
+      onboarding.acknowledge()
+      gettingStartedWindow = nil
+    }
+  }
   func applicationWillTerminate(_ notification: Notification) { model?.shutdown() }
 }

@@ -52,7 +52,7 @@ The pipeline:
 
 1. Builds and signs the app with hardened runtime, a secure timestamp and the audio-input entitlement. Verifies the signature, signing authority and entitlements.
 2. Checks relocated-app resources and translations.
-3. Submits a temporary app ZIP to Apple, requires `Accepted`, then staples and validates the app ticket and assesses the app with Gatekeeper.
+3. Preserves the submitted app and ZIP under `.local/notarization`, submits the ZIP to Apple, requires `Accepted`, then staples and validates the app ticket and assesses the app with Gatekeeper.
 4. Archives the stapled app as ZIP, puts it into a signed DMG, and creates a PKG signed with Developer ID Installer.
 5. Notarizes and staples the DMG and PKG; validates their tickets/signatures and Gatekeeper assessments.
 6. Checks both containers' payloads and creates checksums **after** signing and stapling.

@@ -10,8 +10,14 @@ The `Release` workflow runs on a pushed semantic version tag (for example `v0.1.
 
 No long-lived GitHub token or signing private key is stored in the repository. The workflow uses its short-lived GitHub token. The default `preview` mode uses development/ad-hoc app signing and unsigned, unnotarized containers. The explicit `developer-id` mode signs and notarizes the app and containers, staples tickets and requires Gatekeeper acceptance before generating checksums. See [Developer ID setup](distribution.md) for local credentials and GitHub Actions variables/secrets. An Apple Development identity is not a substitute for Developer ID. Keep release notes consistent with the mode actually used.
 
-Manual local package: `bash scripts/package-release.sh 0.1.5 arm64` (run on the corresponding architecture).
+Manual local package: `bash scripts/package-release.sh 0.2.0 arm64`, followed by `x86_64` on the signing Mac. Architecture is selected explicitly.
 
 Runner labels verified against https://docs.github.com/en/actions/reference/runners/github-hosted-runners . Private-repository artifacts/releases inherit repository access.
 
 The PKG has one app payload, no pre/postinstall scripts and no launch services or daemons. Relocation is disabled so an upgrade cannot silently update a workspace checkout instead of `/Applications`. Existing app contents are replaced atomically, with version and bundle-identifier checks. Users should quit the old app before installing. DMGs include an Applications symlink and bilingual installation instructions.
+
+## Update feed publication
+
+Increment **both** `CFBundleShortVersionString` and the monotonically increasing `CFBundleVersion`. After both architectures pass Developer ID signing, notarization, stapling and container checks, run `python3 scripts/generate-update-feeds.py`. It verifies the Keychain public key matches the app, signs the final ZIPs and writes `updates/appcast-arm64.xml` and `updates/appcast-x86_64.xml`. Do not modify signed archives.
+
+Commit application changes and tag the exact source used to build. Publish the six matching immutable release assets plus SHA256SUMS, verify their remote digests, **then** commit/push the generated feeds. The deliberate preview channel uses explicit release URLs; it does not depend on GitHub's latest-release endpoint. Existing pre-updater versions need one manual installation of 0.2.0. See [update design and verification](updating.md).

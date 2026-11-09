@@ -29,4 +29,8 @@ No trained speech-quality classifier, codec/radio retransmission telemetry, pack
 
 ## Interface states
 
-Monitoring; limited monitoring; suspected audio issue; confirmed local device disappearance; observation ended/device restored; paused; simulation. “Not measured” must remain distinct from “no anomalies detected.” Default status has two direction rows, a small Bluetooth/network summary, one selected incident, evidence disclosure and one next step.
+Monitoring; limited monitoring; suspected audio issue; confirmed local device disappearance; observation ended/device restored; paused; simulation. “Not measured” must remain distinct from “no anomalies detected.”
+
+The status window has Overview, Trends and Issues sections. Overview shows current state, two direction summaries, Bluetooth/network context and the latest issue with one next step. Trends contains the full 60-second charts. Issues contains historical records and evidence; reading a record is not interrupted by a new live event. Notification clicks open the matching issue, including an explicit unavailable state if it has expired. Capture scope and detailed metrics are available from the information button.
+
+First use has three optional steps: introduction to the menu-bar app, explicit monitoring choices, and a completion summary reflecting actual readings and permission states. Presenting, skipping or closing the guide never enables capture. Existing guide completion is respected after upgrading; the guide remains available from the menu.

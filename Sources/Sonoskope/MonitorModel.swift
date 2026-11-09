@@ -35,6 +35,7 @@ import SonoskopeCore
   var notificationStatus = L10n.tr("通知遵循系统权限与专注模式")
   var loginEnabled = false
   var demoScenario: DemoScenario?
+  @ObservationIgnored var onDemoChange: ((Bool) -> Void)?
   var clock = Date()
   var audioHistory = TelemetryHistory()
   var networkHistory = TelemetryHistory()
@@ -668,6 +669,7 @@ import SonoskopeCore
       stopCollectors()
     }
     demoScenario = scenario
+    onDemoChange?(true)
     demoDate = Date()
     demoAudioHistory = TelemetryHistory()
     demoNetworkHistory = TelemetryHistory()
@@ -696,6 +698,7 @@ import SonoskopeCore
   }
   func exitDemo() {
     demoScenario = nil
+    onDemoChange?(false)
     demoEngine.clear()
     selectedIncidentID = nil
     revision += 1

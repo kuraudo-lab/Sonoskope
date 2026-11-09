@@ -37,7 +37,7 @@ The smoke mode uses real device/process/path/probe APIs, leaves microphone and o
 
 ## Release workflow
 
-Push an annotated semantic version tag after updating the bundle version and English release notes. GitHub Actions tests/builds both architectures and publishes a prerelease only after both architectures pass package and checksum verification. See [release automation](releasing.md).
+Releases currently use local Developer ID signing and Apple notarization (`SONOSKOPE_RELEASE_SOURCE=local`). A version tag does not publish preview packages. See [release automation](releasing.md) and [software updates](updating.md).
 
 ## Source layout
 
@@ -46,7 +46,7 @@ Push an annotated semantic version tag after updating the bundle version and Eng
 - `Tests/SonoskopeCoreTests`: regression tests for evidence boundaries, automatic input policy, localization, and history migration.
 - `Tests/SonoskopeTests`: application lifecycle tests with an injected microphone; they do not open real input devices.
 
-No external package dependencies. No meeting-platform integrations or private APIs.
+Sparkle 2.10.1 is a checksum-pinned binary dependency for verified app installation. Its license is bundled as `Sparkle-LICENSE`. No meeting-platform integrations or private APIs.
 
 ## Product demo
 

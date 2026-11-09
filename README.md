@@ -14,7 +14,7 @@ English | [简体中文](README_zh.md)
 
 macOS 14.2+ · Apple Silicon & Intel · English & 简体中文
 
-> **Developer preview:** current downloads are ad-hoc signed and not notarized by Apple. macOS may block first launch; the PKG installer is also unsigned. Physical-device coverage is still growing—see the [validation record](docs/validation.md).
+> **0.2.0 preview:** Developer ID signed and Apple-notarized downloads for Apple Silicon and Intel. Physical-device coverage is still growing—see the [validation record](docs/validation.md).
 
 ## See what happened when the sound broke up
 
@@ -37,20 +37,25 @@ No extra audio driver or meeting-platform integration is required. Sonoskope use
 
 ## Download and get started
 
-1. **Install.** Open [Releases](https://github.com/kuraudo-lab/Sonoskope/releases), choose `arm64` for Apple Silicon or `x86_64` for Intel, and download the DMG. Drag Sonoskope to Applications, eject the disk image, then launch it from Applications. PKG and ZIP downloads are also available. Quit the old version before updating.
-2. **Choose what to observe.** Click the Sonoskope menu-bar icon to open status, then the gear to open Settings. Device and network-path monitoring start automatically. Enable output analysis to see app-output levels, or opt into automatic microphone monitoring. Grant the relevant macOS permission when prompted.
-3. **Check the evidence.** When audio breaks up, use the button for marking a sound problem to record the moment. Review recent incidents and the last 60 seconds of charts. A blank reading means data is unavailable, not that the sound is healthy.
+1. **Install.** Open [Releases](https://github.com/kuraudo-lab/Sonoskope/releases), choose `arm64` for Apple Silicon or `x86_64` for Intel, and download the DMG. Drag Sonoskope to Applications, eject the disk image, then launch it from Applications. PKG and ZIP downloads are also available. For 0.1.6 or earlier, quit the old app and install 0.2.0 manually once.
+2. **Choose what to observe.** The three-step first-use guide introduces the menu-bar app and lets you choose monitoring; skip or revisit it at any time. Device and network-path monitoring start automatically. Enable output analysis to see app-output levels, or opt into automatic microphone monitoring. Grant the relevant macOS permission when prompted.
+3. **Check the evidence.** When audio breaks up, use the button for marking a sound problem to record the moment. Use **Overview** for current status, **Trends** for the last 60 seconds of charts, and **Issues** for historical evidence. A blank reading means data is unavailable, not that the sound is healthy.
 
 Prefer a quick input check? Use the microphone menu to start a bounded **10-second test**. Automatic microphone monitoring follows other apps' input-device usage; a meeting's mute button may leave that usage active. Opening the microphone can change a Bluetooth headset's mode.
 
 Closing the window keeps monitoring running. Pause from the status window, or right-click the menu-bar icon to quit. You can explore the built-in demo scenarios from Settings without making a call.
+
+## Updates on your schedule
+
+Sonoskope checks for updates and downloads verified packages in the background. Choose **Install and Relaunch** when ready; quitting normally never installs an update. Turn off automatic checks in Settings if you prefer. [How updates work →](docs/updating.md)
 
 ## Keep the clues, without saving raw audio
 
 - **No raw audio is saved.** Audio analysis produces numeric measurements; retained history contains diagnostic events and metrics.
 - **You control capture.** Microphone and app-output analysis are opt-in. Automatic microphone capture stops when other apps release the input and suspends on pause, sleep, demos, unknown usage, or lost permission.
 - **History stays local.** Keep up to 100 incidents for the current session, 24 hours, or 7 days. Exported JSON can contain app/device identifiers and timestamps; review it before sharing.
-- **Network checks are explicit.** Optional probes connect to `www.apple.com:443` while measured audio is active. They send no audio and can be disabled in Settings.
+- **Software update checks** contact GitHub; they send no audio or diagnostic history and can be disabled.
+- **Network probes are optional.** Optional probes connect to `www.apple.com:443` while measured audio is active. They send no audio and can be disabled in Settings.
 
 ## Understand the limits
 

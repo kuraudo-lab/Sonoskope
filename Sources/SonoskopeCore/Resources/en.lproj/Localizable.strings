@@ -320,3 +320,74 @@
 "可从菜单栏菜单再次打开使用指南。" = "Reopen this guide from the menu-bar menu.";
 "使用指南…" = "Getting started…";
 "Sonoskope · 使用指南" = "Sonoskope · Getting started";
+
+/* Compact workspace and first-run setup */
+"概览" = "Overview";
+"趋势" = "Trends";
+"认识应用" = "Welcome";
+"选择监测项" = "Choose monitoring";
+"开始使用" = "Get started";
+"已观测事件" = "Observed event";
+"疑似异常" = "Suspected issue";
+"原因未确认" = "Cause unconfirmed";
+"完成" = "Done";
+"仅本机输入；不代表远端听感。" = "Local input only; not what others hear.";
+"应用数字输出；不代表耳机实际发声。" = "Digital app output; not acoustic headset output.";
+"麦克风权限不可用" = "Microphone permission unavailable";
+"查看依据" = "View evidence";
+"所有记录" = "All issues";
+"历史事件，与当前状态分开显示。" = "Past events, separate from current status.";
+"这条记录已不再保留" = "This record is no longer retained";
+"尚无问题记录" = "No issues recorded";
+"自动麦克风监测" = "Automatic microphone monitoring";
+"跳过引导" = "Skip setup";
+"返回" = "Back";
+"进入概览" = "Open overview";
+"继续" = "Continue";
+"声音出问题时，知道先查哪里。" = "Know where to look when audio goes wrong.";
+"查看本机声音、设备连接与网络线索，帮助你决定下一步。" = "See local audio, device connections and network clues to decide what to check next.";
+"随时从菜单栏打开" = "Always in your menu bar";
+"关闭窗口后仍在菜单栏运行；点击 Sonoskope 图标可重新查看状态。" = "Closing this window keeps Sonoskope running. Click its menu-bar icon to see your status again.";
+"听到异常，标记当下" = "Hear a problem? Mark the moment.";
+"点击“刚才声音有问题”，在问题记录中对照当时的本地证据。" = "Choose “Audio just sounded wrong”, then review the local evidence in Issues.";
+"保留线索，不保存录音" = "Keep the clues, not recordings";
+"音频采集由你开启。本机读数不能证明远端听感或耳机实际发声。" = "You choose when to capture audio. Local readings cannot establish remote audio quality or what a headset actually plays.";
+"由你选择采集范围" = "Choose what to monitor";
+"可全部跳过，之后在设置中开启。仅在你开启相应功能时请求权限。" = "You can skip both and enable them later in Settings. Permission is requested only when you enable a feature.";
+"设备连接状态" = "Device connections";
+"只观察设备是否可用，不采集音频。" = "Observe device availability without capturing audio.";
+"其他应用使用输入设备时采集，停止使用后关闭。会打开麦克风，可能改变蓝牙模式；会议静音不一定停止采集。" = "Capture while another app uses an input device, then stop. This opens the microphone and may change Bluetooth mode. Muting a call may not stop capture.";
+"准备好了" = "Ready when you are";
+"点击菜单栏图标回到概览。需要测试时，可主动进行一次 10 秒麦克风测试。" = "Open the overview from your menu bar. Start a 10-second microphone test whenever you need one.";
+"查看趋势" = "View trends";
+"该问题不在最近 60 秒内；下方曲线不代表当时的数据。" = "This issue is outside the last 60 seconds; the charts below do not show that event.";
+
+"此模式不检查软件更新" = "Software updates are unavailable in this mode";
+
+"自动检查并下载，由你安装并重启" = "Updates download automatically; you choose when to install";
+
+"正在检查更新…" = "Checking for updates…";
+
+"正在后台下载并验证…" = "Downloading and verifying in the background…";
+
+"更新已准备好" = "Update ready";
+
+"正在安装，即将重新启动…" = "Installing and relaunching…";
+
+"当前没有可安装的新版本" = "No newer version is available";
+
+"更新未完成；现有版本保持不变" = "Update did not complete; your current version is unchanged";
+
+"更新包验证失败，请稍后重试。" = "The update could not be verified. Please try again later.";
+
+"软件更新" = "Software updates";
+
+"后台检查并下载更新。只有点击“安装并重启”后才会退出当前应用；普通退出不会安装更新。" = "Updates are checked and downloaded in the background. Sonoskope closes only after you choose Install and Relaunch. Quitting normally does not install an update.";
+
+"自动检查并下载更新" = "Automatically check for and download updates";
+
+"安装并重启" = "Install and Relaunch";
+
+"检查更新" = "Check for Updates";
+
+"检查更新…" = "Check for Updates…";

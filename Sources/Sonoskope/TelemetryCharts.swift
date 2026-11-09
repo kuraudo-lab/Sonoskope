@@ -9,6 +9,8 @@ struct TelemetryCharts: View {
   let incidentAt: Date?
   let audioEnabled: Bool
   let networkEnabled: Bool
+  var audioHeight: CGFloat = 140
+  var networkHeight: CGFloat = 100
   @State private var selectedAudioDate: Date?
   @State private var selectedNetworkDate: Date?
   private var domain: ClosedRange<Date> { endingAt.addingTimeInterval(-60)...endingAt }
@@ -90,7 +92,7 @@ struct TelemetryCharts: View {
             }
           }
           .chartXSelection(value: $selectedAudioDate)
-          .frame(height: 140)
+          .frame(height: audioHeight)
           .accessibilityLabel(L10n.tr("最近一分钟本地音频电平，蓝色为应用输出，紫色为麦克风输入。缺失数据不连线。"))
           Text(audioDetail).font(.caption).foregroundStyle(.secondary).monospacedDigit()
           if audio.contains(where: { $0.context != nil }) {
@@ -146,7 +148,7 @@ struct TelemetryCharts: View {
           }
           .chartYAxis { AxisMarks(position: .leading, values: .automatic(desiredCount: 3)) }
           .chartXSelection(value: $selectedNetworkDate)
-          .frame(height: 100)
+          .frame(height: networkHeight)
           .accessibilityLabel(L10n.tr("最近一分钟到测试目标的 TCP 连接耗时，含 DNS。橙色竖线表示探测失败或超时，不是零延迟。"))
           Text(networkDetail).font(.caption).foregroundStyle(.secondary).monospacedDigit()
         } else {

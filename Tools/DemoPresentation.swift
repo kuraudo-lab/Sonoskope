@@ -62,16 +62,16 @@ struct DemoPresentationView: View {
               audioEnabled: true, networkEnabled: true)
             Text("Connection probes are not meeting latency or packet loss.")
               .font(.callout).foregroundStyle(.secondary)
-          }.padding(24).frame(width: 520, height: 740)
+          }.padding(24).frame(width: 640, height: 620)
             .background(Color(nsColor: .windowBackgroundColor))
         } else {
           StatusView(model: presentation.model, openSettings: {})
-            .frame(width: 520, height: 740).allowsHitTesting(false)
+            .frame(width: 640, height: 620).allowsHitTesting(false)
         }
       }.clipShape(RoundedRectangle(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(.gray.opacity(0.2)))
         .shadow(color: .black.opacity(0.12), radius: 14, y: 6)
-    }.padding(32).frame(width: 1030, height: 804)
+    }.padding(32).frame(width: 1150, height: 804)
       .background(Color(nsColor: .underPageBackgroundColor))
       .environment(\.locale, L10n.locale)
   }
@@ -85,7 +85,7 @@ struct DemoPresentationView: View {
     let destination = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
     let presentation = DemoPresentation()
     presentation.select(0)
-    let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1030, height: 804),
+    let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1150, height: 804),
                           styleMask: [.titled, .closable], backing: .buffered, defer: false)
     window.title = "Sonoskope Demo · Simulated data"
     window.isReleasedWhenClosed = false
