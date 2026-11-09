@@ -9,8 +9,8 @@ import SonoskopeCore
   var network = NetworkReading()
   var outputMeasurement: AudioMeasurement?
   var inputMeasurement: AudioMeasurement?
-  var outputStatus = "未开启音频分析"
-  var inputStatus = "未检测 · 仅在主动测试时采集"
+  var outputStatus = L10n.tr("未开启音频分析")
+  var inputStatus = L10n.tr("未检测 · 仅在主动测试时采集")
   var microphoneRunning = false
   var paused = false
   var outputEnabled = false
@@ -21,7 +21,7 @@ import SonoskopeCore
   var selectedProcess: UInt32 = 0
   var selectedIncidentID: UUID?
   var feedback = ""
-  var notificationStatus = "通知遵循系统权限与专注模式"
+  var notificationStatus = L10n.tr("通知遵循系统权限与专注模式")
   var loginEnabled = false
   var demoScenario: DemoScenario?
   var clock = Date()
@@ -53,42 +53,43 @@ import SonoskopeCore
   }
   var activeIncidents: [Incident] { incidents.filter(\.isActive) }
   var title: String {
-    if demoScenario != nil { return "场景演示 · 模拟数据" }
-    if paused { return "监测已暂停" }
+    if demoScenario != nil { return L10n.tr("场景演示 · 模拟数据") }
+    if paused { return L10n.tr("监测已暂停") }
     if let incident = activeIncidents.first(where: {
       $0.confidence == .suspected || $0.key.hasPrefix("deviceDisconnected:")
     }) {
-      return incident.title
+      return incident.title.localized
     }
     if activeIncidents.contains(where: { $0.key.hasPrefix("captureUnavailable:") }) {
-      return "音频监测不完整"
+      return L10n.tr("音频监测不完整")
     }
-    if !outputEnabled { return "正在监测设备与连接" }
-    if outputMeasurement == nil { return "音频分析等待数据" }
+    if !outputEnabled { return L10n.tr("正在监测设备与连接") }
+    if outputMeasurement == nil { return L10n.tr("音频分析等待数据") }
     if let measurement = outputMeasurement, clock.timeIntervalSince(measurement.date) > 3 {
-      return "音频采集暂无新数据"
+      return L10n.tr("音频采集暂无新数据")
     }
-    return "已观测范围内未见持续异常"
+    return L10n.tr("已观测范围内未见持续异常")
   }
   var subtitle: String {
-    if demoScenario != nil { return "真实采集与系统通知已暂停；演示不会写入历史。" }
-    if paused { return "以下是暂停前的记录，不代表当前状态。" }
-    return "只分析本机可见证据；不代表远端听感或耳机实际发声。"
+    if demoScenario != nil { return L10n.tr("真实采集与系统通知已暂停；演示不会写入历史。") }
+    if paused { return L10n.tr("以下是暂停前的记录，不代表当前状态。") }
+    return L10n.tr("只分析本机可见证据；不代表远端听感或耳机实际发声。")
   }
   var outputReading: String {
     guard demoScenario == nil else {
       return demoScenario == .correlated
-        ? "模拟：重复可疑缺口" : demoScenario == .unavailable ? "模拟：无法采集" : "模拟：见问题记录"
+        ? L10n.tr("模拟：重复可疑缺口")
+        : demoScenario == .unavailable ? L10n.tr("模拟：无法采集") : L10n.tr("模拟：见问题记录")
     }
     guard outputEnabled, let sample = outputMeasurement else { return outputStatus }
-    guard clock.timeIntervalSince(sample.date) <= 3 else { return "暂无新数据 · 不能判断音频质量" }
-    if sample.rmsDB <= -100 { return "收到静音数据 · 不代表故障或采集授权有效" }
-    return String(format: "本地数字输出 %.0f dBFS", sample.rmsDB)
+    guard clock.timeIntervalSince(sample.date) <= 3 else { return L10n.tr("暂无新数据 · 不能判断音频质量") }
+    if sample.rmsDB <= -100 { return L10n.tr("收到静音数据 · 不代表故障或采集授权有效") }
+    return String(format: L10n.tr("本地数字输出 %.0f dBFS"), sample.rmsDB)
   }
   var inputReading: String {
-    if demoScenario != nil { return "未检测（模拟场景）" }
+    if demoScenario != nil { return L10n.tr("未检测（模拟场景）") }
     if microphoneRunning, let sample = inputMeasurement {
-      return String(format: "测试中 · %.0f dBFS", sample.rmsDB)
+      return String(format: L10n.tr("测试中 · %.0f dBFS"), sample.rmsDB)
     }
     return inputStatus
   }
@@ -230,7 +231,7 @@ import SonoskopeCore
         try SMAppService.mainApp.unregister()
       }
       loginEnabled = SMAppService.mainApp.status == .enabled
-      feedback = loginEnabled ? "登录启动已启用" : "登录启动未启用；如需批准，请检查系统登录项。"
+      feedback = loginEnabled ? L10n.tr("登录启动已启用") : L10n.tr("登录启动未启用；如需批准，请检查系统登录项。")
     } catch {
       loginEnabled = SMAppService.mainApp.status == .enabled
       feedback = error.localizedDescription
@@ -248,7 +249,7 @@ import SonoskopeCore
     networkHistory.breakSeries("network")
     probeDegraded = false
     guard networkEnabled else {
-      network.probe = "主动探测已关闭"
+      network.probe = L10n.tr("主动探测已关闭")
       return
     }
     networkTask = Task { [weak self] in
@@ -264,7 +265,8 @@ import SonoskopeCore
         self.network.lastUpdated = Date()
         self.network.wifi = NetworkMonitor.wifiDescription()
         let summary = ProbeSummary(samples: self.network.samples)
-        self.network.probe = value.map { String(format: "TCP 连接 %.0f ms", $0) } ?? "测试连接失败／超时"
+        self.network.probe =
+          value.map { String(format: L10n.tr("TCP 连接 %.0f ms"), $0) } ?? L10n.tr("测试连接失败／超时")
         if summary.degraded {
           self.receive(
             .init(
@@ -287,7 +289,7 @@ import SonoskopeCore
     if enabled && !paused && demoScenario == nil {
       startOutput()
     } else {
-      outputStatus = enabled ? "等待恢复监测" : "未开启音频分析"
+      outputStatus = enabled ? L10n.tr("等待恢复监测") : L10n.tr("未开启音频分析")
     }
   }
   func selectProcess(_ id: UInt32) {
@@ -299,13 +301,13 @@ import SonoskopeCore
     captureGeneration = UUID()
     let token = captureGeneration
     outputMeasurement = nil
-    outputStatus = "等待采集授权或音频数据"
+    outputStatus = L10n.tr("等待采集授权或音频数据")
     guard #available(macOS 14.2, *) else {
-      outputStatus = "需要 macOS 14.2 或更新版本"
+      outputStatus = L10n.tr("需要 macOS 14.2 或更新版本")
       return
     }
     if selectedProcess != 0 && !hardware.processes.contains(where: { $0.id == selectedProcess }) {
-      outputStatus = "所选音频进程已退出，请重新选择"
+      outputStatus = L10n.tr("所选音频进程已退出，请重新选择")
       return
     }
     do {
@@ -316,7 +318,7 @@ import SonoskopeCore
         else { return }
         let first = self.outputMeasurement == nil
         self.outputMeasurement = sample
-        self.outputStatus = "正在分析本地输出"
+        self.outputStatus = L10n.tr("正在分析本地输出")
         if first {
           self.receive(
             .init(
@@ -330,7 +332,8 @@ import SonoskopeCore
       receive(
         .init(
           kind: .captureUnavailable, direction: .output, source: "output",
-          message: error.localizedDescription))
+          message: (error as? CaptureError)?.diagnosticText
+            ?? LocalizedText(verbatim: error.localizedDescription)))
     }
   }
   func startMicrophone() {
@@ -340,7 +343,7 @@ import SonoskopeCore
     let token = microphoneGeneration
     microphoneRunning = true
     inputMeasurement = nil
-    inputStatus = "等待麦克风权限／开始测试"
+    inputStatus = L10n.tr("等待麦克风权限／开始测试")
     lastAudioEvent[.input] = nil
     Task { [self] in
       guard microphoneGeneration == token, microphoneRunning, !paused, demoScenario == nil else {
@@ -357,7 +360,7 @@ import SonoskopeCore
           self.microphoneRunning = false
           self.inputStatus = message
           if let sample = self.inputMeasurement {
-            self.inputStatus += String(format: " 最后电平 %.0f dBFS。", sample.rmsDB)
+            self.inputStatus += String(format: L10n.tr(" 最后电平 %.0f dBFS。"), sample.rmsDB)
           }
         })
     }
@@ -365,7 +368,7 @@ import SonoskopeCore
   func stopMicrophone() {
     microphoneGeneration = UUID()
     microphone.stop()
-    if microphoneRunning { inputStatus = "测试已停止；结果仅代表本地输入" }
+    if microphoneRunning { inputStatus = L10n.tr("测试已停止；结果仅代表本地输入") }
     microphoneRunning = false
   }
   private func handle(_ sample: AudioMeasurement, direction: Direction) {
@@ -418,11 +421,11 @@ import SonoskopeCore
   }
   func mark(_ direction: Direction) {
     if demoScenario != nil {
-      feedback = "演示中不创建真实记录。请先返回实时监测。"
+      feedback = L10n.tr("演示中不创建真实记录。请先返回实时监测。")
       return
     }
     receive(.init(kind: .userMarked, direction: direction, source: "user", message: "用户手工标记声音异常"))
-    feedback = "已记录时间点及近期事件；不包含录音。"
+    feedback = L10n.tr("已记录时间点及近期事件；不包含录音。")
   }
   func runDemo(_ scenario: DemoScenario) {
     if demoScenario == nil {
@@ -476,7 +479,7 @@ import SonoskopeCore
   func save() {
     guard persist, demoScenario == nil else { return }
     do { try store.save(liveEngine.incidents, retentionHours: retentionHours) } catch {
-      feedback = "问题记录保存失败：" + error.localizedDescription
+      feedback = L10n.tr("问题记录保存失败：") + error.localizedDescription
     }
   }
   func exportReport() {
@@ -489,7 +492,7 @@ import SonoskopeCore
       encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
       encoder.dateEncodingStrategy = .iso8601
       try encoder.encode(incidents).write(to: url, options: .atomic)
-      feedback = "已导出问题与证据；含设备／应用标识，不含录音。"
-    } catch { feedback = "导出失败：" + error.localizedDescription }
+      feedback = L10n.tr("已导出问题与证据；含设备／应用标识，不含录音。")
+    } catch { feedback = L10n.tr("导出失败：") + error.localizedDescription }
   }
 }

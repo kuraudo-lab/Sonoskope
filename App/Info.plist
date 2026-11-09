@@ -1,18 +1,42 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0"><dict>
-<key>CFBundleName</key><string>Sonoskope</string>
-<key>CFBundleDisplayName</key><string>Sonoskope</string>
-<key>CFBundleIdentifier</key><string>lab.kuraudo.Sonoskope</string>
-<key>CFBundleExecutable</key><string>Sonoskope</string>
-<key>CFBundlePackageType</key><string>APPL</string>
-<key>CFBundleShortVersionString</key><string>0.1.0</string>
-<key>CFBundleVersion</key><string>1</string>
-<key>LSMinimumSystemVersion</key><string>14.2</string>
-<key>LSUIElement</key><true/>
-<key>NSHighResolutionCapable</key><true/>
-<key>NSMicrophoneUsageDescription</key><string>仅在你主动测试时分析本地麦克风音频；不保存或上传录音。</string>
-<key>NSAudioCaptureUsageDescription</key><string>分析所选应用的输出音频以发现可疑中断；只保留指标，不保存或上传录音。</string>
-<key>NSBluetoothAlwaysUsageDescription</key><string>读取已连接耳机的连接状态及可用信号强度，帮助定位音频中断。</string>
-<key>NSPrincipalClass</key><string>NSApplication</string>
-</dict></plist>
+<plist version="1.0">
+<dict>
+	<key>CFBundleName</key>
+	<string>Sonoskope</string>
+	<key>CFBundleDisplayName</key>
+	<string>Sonoskope</string>
+	<key>CFBundleIdentifier</key>
+	<string>lab.kuraudo.Sonoskope</string>
+	<key>CFBundleExecutable</key>
+	<string>Sonoskope</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>0.1.1</string>
+	<key>CFBundleVersion</key>
+	<string>2</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>14.2</string>
+	<key>LSUIElement</key>
+	<true/>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Analyze local microphone audio only when you start a test. No recordings are saved or uploaded.</string>
+	<key>NSAudioCaptureUsageDescription</key>
+	<string>Analyze app output audio for suspected interruptions. Only metrics are kept; no recordings are saved or uploaded.</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>Read connection status and available signal strength from connected headsets to help investigate audio interruptions.</string>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>en</string>
+		<string>zh-Hans</string>
+		<string>zh-Hant</string>
+	</array>
+</dict>
+</plist>

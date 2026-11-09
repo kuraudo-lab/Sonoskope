@@ -2,7 +2,7 @@
 
 The `Release` workflow runs on a pushed semantic version tag (for example `v0.1.0`), or a manual dispatch selecting an existing version tag. It does not publish from `main`.
 
-1. Update `App/Info.plist`'s short version and create `docs/releases/<version>.md`.
+1. Update `App/Info.plist`'s short version and create English release notes in `docs/releases/<version>.md`.
 2. Run tests, build, and runtime acceptance checks. Commit the result.
 3. Push the commit and an annotated `v<version>` tag.
 4. GitHub Actions tests and builds on `macos-15` (arm64) and `macos-15-intel` (x86_64), checks version and actual Mach-O architecture, and uploads ZIPs with SHA-256 hashes.

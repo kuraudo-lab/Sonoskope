@@ -26,8 +26,8 @@ import SwiftUI
     }
     statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
     statusItem.button?.image = NSImage(
-      systemSymbolName: "waveform.path", accessibilityDescription: "Sonoskope 音频诊断")
-    statusItem.button?.toolTip = "Sonoskope · 查看音频状态"
+      systemSymbolName: "waveform.path", accessibilityDescription: L10n.tr("Sonoskope 音频诊断"))
+    statusItem.button?.toolTip = L10n.tr("Sonoskope · 查看音频状态")
     statusItem.button?.target = self
     statusItem.button?.action = #selector(statusClicked)
     statusItem.button?.sendAction(on: [.leftMouseUp, .rightMouseUp])
@@ -37,6 +37,10 @@ import SwiftUI
         try? await Task.sleep(for: .seconds(7))
         let payload: [String: Any] = [
           "application": "Sonoskope",
+          "interfaceLanguage": L10n.language.rawValue,
+          "statusTitle": model.title,
+          "microphonePermissionDescription": Bundle.main.localizedInfoDictionary?[
+            "NSMicrophoneUsageDescription"] ?? "",
           "devices": model.hardware.devices.map {
             ["name": $0.name, "transport": $0.transport, "sampleRate": $0.sampleRate]
               as [String: Any]
@@ -68,11 +72,12 @@ import SwiftUI
     let item = NSMenuItem()
     appMenu.addItem(item)
     let menu = NSMenu()
-    menu.addItem(withTitle: "音频状态", action: #selector(showStatus), keyEquivalent: "1")
-    menu.addItem(withTitle: "设置…", action: #selector(showSettings), keyEquivalent: ",")
+    menu.addItem(withTitle: L10n.tr("音频状态"), action: #selector(showStatus), keyEquivalent: "1")
+    menu.addItem(withTitle: L10n.tr("设置…"), action: #selector(showSettings), keyEquivalent: ",")
     menu.addItem(.separator())
     menu.addItem(
-      withTitle: "退出 Sonoskope", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+      withTitle: L10n.tr("退出 Sonoskope"), action: #selector(NSApplication.terminate(_:)),
+      keyEquivalent: "q")
     for entry in menu.items where entry.action != #selector(NSApplication.terminate(_:)) {
       entry.target = self
     }
@@ -82,14 +87,15 @@ import SwiftUI
   @objc private func statusClicked() {
     if NSApp.currentEvent?.type == .rightMouseUp {
       let menu = NSMenu()
-      let status = menu.addItem(withTitle: "音频状态", action: #selector(showStatus), keyEquivalent: "")
+      let status = menu.addItem(
+        withTitle: L10n.tr("音频状态"), action: #selector(showStatus), keyEquivalent: "")
       status.target = self
       let settings = menu.addItem(
-        withTitle: "设置…", action: #selector(showSettings), keyEquivalent: "")
+        withTitle: L10n.tr("设置…"), action: #selector(showSettings), keyEquivalent: "")
       settings.target = self
       menu.addItem(.separator())
       menu.addItem(
-        withTitle: "退出 Sonoskope", action: #selector(NSApplication.terminate(_:)),
+        withTitle: L10n.tr("退出 Sonoskope"), action: #selector(NSApplication.terminate(_:)),
         keyEquivalent: "q")
       statusItem.menu = menu
       statusItem.button?.performClick(nil)
@@ -101,7 +107,7 @@ import SwiftUI
   @objc func showStatus() {
     if statusWindow == nil {
       statusWindow = window(
-        title: "Sonoskope · 音频状态", size: NSSize(width: 520, height: 740),
+        title: L10n.tr("Sonoskope · 音频状态"), size: NSSize(width: 520, height: 740),
         view: StatusView(model: model, openSettings: { [weak self] in self?.showSettings() }))
     }
     statusWindow?.makeKeyAndOrderFront(nil)
@@ -110,7 +116,7 @@ import SwiftUI
   @objc func showSettings() {
     if settingsWindow == nil {
       settingsWindow = window(
-        title: "Sonoskope · 设置", size: NSSize(width: 540, height: 700),
+        title: L10n.tr("Sonoskope · 设置"), size: NSSize(width: 540, height: 700),
         view: SettingsView(model: model))
     }
     settingsWindow?.makeKeyAndOrderFront(nil)
@@ -123,7 +129,7 @@ import SwiftUI
     )
     window.title = title
     window.isReleasedWhenClosed = false
-    window.contentView = NSHostingView(rootView: view)
+    window.contentView = NSHostingView(rootView: view.environment(\.locale, L10n.locale))
     window.center()
     return window
   }

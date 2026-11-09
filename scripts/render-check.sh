@@ -7,7 +7,7 @@ check_app="$PWD/.local/RenderCheck.app"
 mkdir -p "$check_app/Contents/MacOS" "$PWD/.local/render-check"
 python3 - "$bin_path" "$check_app" <<'PYTHON'
 from pathlib import Path
-import plistlib, subprocess, sys
+import plistlib, subprocess, sys, shutil
 binary_directory=Path(sys.argv[1]); app=Path(sys.argv[2])
 source=[str(p) for p in Path('Sources/Sonoskope').glob('*.swift') if p.name!='AppMain.swift']
 modules=binary_directory/'Modules'
@@ -19,6 +19,14 @@ subprocess.run(['xcrun','swiftc','-parse-as-library','-swift-version','5','-targ
 with open('App/Info.plist','rb') as f: info=plistlib.load(f)
 info.update(CFBundleIdentifier='lab.kuraudo.Sonoskope.RenderCheck',CFBundleExecutable='RenderCheck',CFBundleName='Sonoskope Render Check')
 with open(app/'Contents/Info.plist','wb') as f: plistlib.dump(info,f)
+resources=app/'Contents/Resources'
+resources.mkdir(exist_ok=True)
+for bundle in list(binary_directory.glob('*.bundle'))+list(Path('App').glob('*.lproj')):
+    target=resources/bundle.name
+    if target.exists(): shutil.rmtree(str(target))
+    shutil.copytree(str(bundle),str(target))
 PYTHON
 codesign --force --sign - "$check_app"
-"$check_app/Contents/MacOS/RenderCheck" "$PWD/.local/render-check"
+for language in en zh-Hans; do
+  "$check_app/Contents/MacOS/RenderCheck" "$PWD/.local/render-check/$language" -AppleLanguages "($language)"
+done

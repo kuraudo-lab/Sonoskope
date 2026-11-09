@@ -33,7 +33,7 @@ import SwiftUI
     print("Rendered 7 isolated scenarios, charts and settings with the actual SwiftUI views.")
   }
   @MainActor private static func render<V: View>(_ view: V, to url: URL, size: NSSize) throws {
-    let host = NSHostingView(rootView: view)
+    let host = NSHostingView(rootView: view.environment(\.locale, L10n.locale))
     let window = NSWindow(
       contentRect: NSRect(origin: .zero, size: size), styleMask: [.titled], backing: .buffered,
       defer: false)

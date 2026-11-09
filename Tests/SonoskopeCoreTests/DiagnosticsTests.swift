@@ -41,7 +41,7 @@ final class DiagnosticsTests: XCTestCase {
     let update = engine.ingest(event(.networkDegraded), audioActive: true)
     XCTAssertNil(update.notification)
     XCTAssertEqual(update.changedIncident?.title, "网络探测出现波动")
-    XCTAssertTrue(update.changedIncident!.explanation.contains("不能证明"))
+    XCTAssertTrue(update.changedIncident!.explanation.resolved(in: .chinese).contains("不能证明"))
   }
   func testSingleGapIsInsufficientRepeatedGapsAreSuspectedNotConfirmed() {
     var engine = DiagnosticEngine()
@@ -73,7 +73,7 @@ final class DiagnosticsTests: XCTestCase {
     for e in DemoScenario.correlated.events(at: start) { _ = engine.ingest(e, audioActive: true) }
     let incident = engine.incidents.last!
     XCTAssertEqual(incident.confidence, .suspected)
-    XCTAssertTrue(incident.explanation.contains("尚不能确认因果"))
+    XCTAssertTrue(incident.explanation.resolved(in: .chinese).contains("尚不能确认因果"))
     XCTAssertTrue(incident.evidence.contains { $0.kind == .networkDegraded })
   }
   func testCollectorFailureIsNotAudioFailure() {
@@ -113,7 +113,7 @@ final class DiagnosticsTests: XCTestCase {
     _ = engine.ingest(event(.networkDegraded, 0), audioActive: true)
     _ = engine.ingest(event(.networkRecovered, 1), audioActive: true)
     for second in 2...4 { _ = engine.ingest(event(.audioGap, Double(second)), audioActive: true) }
-    XCTAssertFalse(engine.incidents.last!.explanation.contains("网络"))
+    XCTAssertFalse(engine.incidents.last!.explanation.resolved(in: .chinese).contains("网络"))
   }
   func testResetObservationWindowDoesNotMixSessions() {
     var engine = DiagnosticEngine()

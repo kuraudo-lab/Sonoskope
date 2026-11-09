@@ -9,6 +9,7 @@ struct AudioDeviceInfo: Identifiable, Equatable {
   let uid: String
   let name: String
   let transport: String
+  let isBluetooth: Bool
   let inputChannels: Int
   let outputChannels: Int
   let sampleRate: Double
@@ -104,12 +105,12 @@ enum AudioHAL {
   }
   static func transport(_ value: UInt32) -> String {
     switch value {
-    case kAudioDeviceTransportTypeBluetooth, kAudioDeviceTransportTypeBluetoothLE: "蓝牙"
-    case kAudioDeviceTransportTypeBuiltIn: "内置"
+    case kAudioDeviceTransportTypeBluetooth, kAudioDeviceTransportTypeBluetoothLE: L10n.tr("蓝牙")
+    case kAudioDeviceTransportTypeBuiltIn: L10n.tr("内置")
     case kAudioDeviceTransportTypeUSB: "USB"
-    case kAudioDeviceTransportTypeVirtual, kAudioDeviceTransportTypeAggregate: "虚拟"
-    case kAudioDeviceTransportTypeHDMI, kAudioDeviceTransportTypeDisplayPort: "显示器"
-    default: "其他"
+    case kAudioDeviceTransportTypeVirtual, kAudioDeviceTransportTypeAggregate: L10n.tr("虚拟")
+    case kAudioDeviceTransportTypeHDMI, kAudioDeviceTransportTypeDisplayPort: L10n.tr("显示器")
+    default: L10n.tr("其他")
     }
   }
   @MainActor static func snapshot(includeBluetooth: Bool) -> HardwareSnapshot {
@@ -122,9 +123,12 @@ enum AudioHAL {
     result.devices = ids(system, kAudioHardwarePropertyDevices).compactMap { id in
       let name = string(id, kAudioObjectPropertyName)
       guard !name.hasPrefix("Sonoskope Tap") else { return nil }
+      let transportType = scalar(id, kAudioDevicePropertyTransportType, default: UInt32(0))
       return .init(
         id: id, uid: string(id, kAudioDevicePropertyDeviceUID), name: name,
-        transport: transport(scalar(id, kAudioDevicePropertyTransportType, default: UInt32(0))),
+        transport: transport(transportType),
+        isBluetooth: transportType == kAudioDeviceTransportTypeBluetooth
+          || transportType == kAudioDeviceTransportTypeBluetoothLE,
         inputChannels: channels(id, scope: kAudioDevicePropertyScopeInput),
         outputChannels: channels(id, scope: kAudioDevicePropertyScopeOutput),
         sampleRate: scalar(id, kAudioDevicePropertyNominalSampleRate, default: Double(0)),
@@ -139,7 +143,7 @@ enum AudioHAL {
         let name =
           NSRunningApplication(processIdentifier: pid)?.localizedName ?? bundle.split(
             separator: "."
-          ).last.map(String.init) ?? "进程 \(pid)"
+          ).last.map(String.init) ?? L10n.tr("进程 \(pid)")
         return .init(
           id: id, pid: pid, bundleID: bundle, name: name,
           inputActive: scalar(id, kAudioProcessPropertyIsRunningInput, default: UInt32(0)) != 0,
@@ -152,7 +156,7 @@ enum AudioHAL {
     }
     if includeBluetooth, let devices = IOBluetoothDevice.pairedDevices() as? [IOBluetoothDevice] {
       result.bluetooth = devices.filter { $0.isConnected() }.map {
-        .init(name: $0.name ?? "蓝牙设备", rssi: BluetoothReading.validRSSI(Int($0.rawRSSI())))
+        .init(name: $0.name ?? L10n.tr("蓝牙设备"), rssi: BluetoothReading.validRSSI(Int($0.rawRSSI())))
       }
     }
     return result

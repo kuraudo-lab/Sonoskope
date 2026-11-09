@@ -24,3 +24,10 @@ One incremental XCTest run under the Xcode beta build engine failed to load its 
 - Execution on oldest supported macOS, login-startup persistence and signed/notarized distribution.
 
 Download packages are developer previews, not a claim that these physical acceptance checks are complete. CI build status and published assets are available in GitHub Actions and Releases.
+
+## v0.1.1 localization validation
+
+- 36 tests passed, including seven new localization tests for preference order, fallback, catalog/format parity, interpolation, legacy history migration, and bilingual history rendering.
+- The signed packaged app ran with `en-US`, `zh-Hans-CN`, `zh-Hant-TW`, and `ja-JP` preference overrides. Runtime status strings and bundle-resolved microphone permission descriptions matched English, Chinese, Chinese, and English respectively. No audio capture was enabled by these checks.
+- Actual SwiftUI views rendered in both English and Chinese: seven isolated scenarios, charts, and settings. Status, settings, and charts were visually inspected for translation and wrapping. This was offscreen rendering, not desktop interaction.
+- Both localizations and native permission resources were included in the release app and passed strict signature verification. No new physical audio or permission-dialog acceptance claims are made by this localization change.

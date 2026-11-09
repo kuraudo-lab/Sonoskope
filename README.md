@@ -1,12 +1,20 @@
 # Sonoskope
 
+English | [简体中文](README_zh.md)
+
 A native macOS menu-bar app for investigating interrupted meeting audio.
 
 Sonoskope asks two questions: **is my local input healthy?** and **where might the sound I hear be breaking up?** It correlates system-visible audio, device, Bluetooth, and network evidence without Zoom or Teams APIs.
 
 ## Download
 
-[GitHub Releases](https://github.com/kuraudo-lab/Sonoskope/releases) provides Apple Silicon and Intel ZIPs with SHA-256 checksums. v0.1.0 is an **ad-hoc signed, unnotarized developer preview**; Gatekeeper may prevent direct opening. A private repository requires an authorized GitHub account to download. Local source builds remain available below.
+[GitHub Releases](https://github.com/kuraudo-lab/Sonoskope/releases) provides Apple Silicon and Intel ZIPs with SHA-256 checksums. These builds are **ad-hoc signed, unnotarized developer previews**; Gatekeeper may prevent direct opening. A private repository requires an authorized GitHub account to download. Local source builds remain available below.
+
+## Language
+
+Starting with v0.1.1, the interface follows the macOS preferred-language order and supports English and Chinese. The first supported preference is used; if none is supported, it falls back to English. Chinese regional/script variants share the Simplified Chinese translation. Restart Sonoskope after changing system or app language.
+
+Menus, settings, charts, notifications, permission descriptions, and diagnostics are localized. Incident history stores message keys and parameters and can be displayed in either language. Known v0.1.0 messages migrate on read; device/app names, system errors, and unknown historical text retain their original wording. The original v0.1.0 download remains unchanged.
 
 ## Run locally
 
@@ -18,7 +26,7 @@ bash scripts/build-app.sh
 open dist/Sonoskope.app
 ```
 
-Open `Package.swift` in Xcode for editing. The build script assembles an actual `.app` bundle with permission descriptions and local ad-hoc signing. `swift run` is not the supported permission-testing launch path. This is a developer build, not a notarized distribution. To use your signing identity, set `SONOSKOPE_SIGN_IDENTITY` when building; rebuilding an ad-hoc signed binary can invalidate prior privacy grants.
+Open `Package.swift` in Xcode for editing. The build script assembles an actual `.app` bundle with permission descriptions, bundled translations, and local ad-hoc signing. `swift run` is not the supported permission-testing launch path. This is a developer build, not a notarized distribution. To use your signing identity, set `SONOSKOPE_SIGN_IDENTITY` when building; rebuilding an ad-hoc signed binary can invalidate prior privacy grants.
 
 Left-click the menu-bar waveform to open status; right-click for settings and quit. Closing a window leaves monitoring running.
 
@@ -61,6 +69,7 @@ Only diagnostic events/metrics are retained, never raw audio. Up to 100 incident
 swift test
 bash scripts/build-app.sh
 ./dist/Sonoskope.app/Contents/MacOS/Sonoskope --smoke-test
+bash scripts/render-check.sh
 open -n dist/Sonoskope.app --args --demo correlated
 ```
 
@@ -73,12 +82,12 @@ The smoke mode uses real device/process/path/probe APIs, leaves microphone and o
 
 ## Release workflow
 
-Push an annotated semantic version tag after updating the bundle version and release notes. GitHub Actions tests/builds both architectures and publishes a prerelease only after both ZIPs pass checksum verification. See [release automation](docs/releasing.md).
+Push an annotated semantic version tag after updating the bundle version and English release notes. GitHub Actions tests/builds both architectures and publishes a prerelease only after both ZIPs pass checksum verification. See [release automation](docs/releasing.md).
 
 ## Source layout
 
-- `Sources/SonoskopeCore`: deterministic diagnosis, PCM metrics, network summaries, scenario fixtures.
+- `Sources/SonoskopeCore`: deterministic diagnosis, PCM metrics, network summaries, scenario fixtures, localization resources.
 - `Sources/Sonoskope`: native UI, collectors, permission flows, lifecycle, notifications, persistence.
-- `Tests/SonoskopeCoreTests`: regression tests for evidence boundaries and failure handling.
+- `Tests/SonoskopeCoreTests`: regression tests for evidence boundaries, failure handling, language selection, and history migration.
 
 No external package dependencies. No meeting-platform integrations or private APIs.

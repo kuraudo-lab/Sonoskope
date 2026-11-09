@@ -12,15 +12,15 @@ import UserNotifications
   func authorize() async -> String {
     do {
       let granted = try await center.requestAuthorization(options: [.alert])
-      return granted ? "已允许无声通知；仍遵循系统专注模式。" : "通知未授权，仍可从菜单栏查看问题。"
-    } catch { return "通知权限不可用：" + error.localizedDescription }
+      return granted ? L10n.tr("已允许无声通知；仍遵循系统专注模式。") : L10n.tr("通知未授权，仍可从菜单栏查看问题。")
+    } catch { return L10n.tr("通知权限不可用：") + error.localizedDescription }
   }
   func post(_ incident: Incident) {
     let content = UNMutableNotificationContent()
-    content.title = incident.title
+    content.title = incident.title.localized
     content.body =
       incident.direction.label + " · "
-      + (incident.confidence == .suspected ? "疑似异常，原因待确认" : "点击查看证据与下一步")
+      + (incident.confidence == .suspected ? L10n.tr("疑似异常，原因待确认") : L10n.tr("点击查看证据与下一步"))
     content.userInfo = ["incident": incident.id.uuidString]
     content.threadIdentifier = "Sonoskope.diagnostics"
     // No sound, critical interruption, Focus bypass, or automatically opened windows.

@@ -6,7 +6,8 @@ import SonoskopeCore
 enum CaptureError: LocalizedError {
   case status(String, OSStatus)
   case unsupported, noInput
-  var errorDescription: String? {
+  var errorDescription: String? { diagnosticText.localized }
+  var diagnosticText: LocalizedText {
     switch self {
     case .status(let operation, let status): "\(operation)失败（\(status)）。请检查系统音频录制权限和设备状态。"
     case .unsupported: "当前音频格式不受支持；没有将缺失数据视为正常。"
@@ -117,11 +118,13 @@ final class CallbackAnalyzer {
     description.isPrivate = true
     description.muteBehavior = .unmuted
     do {
-      try check(AudioHardwareCreateProcessTap(description, &tap), "创建音频采集")
+      try check(AudioHardwareCreateProcessTap(description, &tap), "AudioHardwareCreateProcessTap")
       var format = AudioStreamBasicDescription()
       var address = AudioHAL.address(kAudioTapPropertyFormat)
       var size = UInt32(MemoryLayout<AudioStreamBasicDescription>.size)
-      try check(AudioObjectGetPropertyData(tap, &address, 0, nil, &size, &format), "读取采集格式")
+      try check(
+        AudioObjectGetPropertyData(tap, &address, 0, nil, &size, &format),
+        "AudioObjectGetPropertyData")
       guard format.mFormatID == kAudioFormatLinearPCM,
         format.mFormatFlags & kAudioFormatFlagIsFloat != 0,
         format.mBitsPerChannel == 32, format.mSampleRate > 0
@@ -139,7 +142,8 @@ final class CallbackAnalyzer {
         ],
       ]
       try check(
-        AudioHardwareCreateAggregateDevice(configuration as CFDictionary, &aggregate), "创建采集设备")
+        AudioHardwareCreateAggregateDevice(configuration as CFDictionary, &aggregate),
+        "AudioHardwareCreateAggregateDevice")
       let sink = CallbackAnalyzer { measurement in Task { @MainActor in onMeasurement(measurement) }
       }
       self.sink = sink
@@ -150,8 +154,8 @@ final class CallbackAnalyzer {
           sink.accept(
             input, format: captureFormat,
             sampleTime: timestamp.mFlags.contains(.sampleTimeValid) ? timestamp.mSampleTime : nil)
-        }, "安装采集回调")
-      try check(AudioDeviceStart(aggregate, ioProc), "启动音频采集")
+        }, "AudioDeviceCreateIOProcIDWithBlock")
+      try check(AudioDeviceStart(aggregate, ioProc), "AudioDeviceStart")
     } catch {
       stop()
       throw error
@@ -193,7 +197,7 @@ final class CallbackAnalyzer {
     let permitted = await AVCaptureDevice.requestAccess(for: .audio)
     guard generation == token else { return }
     guard permitted else {
-      onEnd("麦克风权限未授权；没有进行测试。")
+      onEnd(L10n.tr("麦克风权限未授权；没有进行测试。"))
       return
     }
     let engine = AVAudioEngine()
@@ -201,7 +205,7 @@ final class CallbackAnalyzer {
     let format = input.outputFormat(forBus: 0)
     guard format.channelCount > 0, format.sampleRate > 0, format.commonFormat == .pcmFormatFloat32
     else {
-      onEnd("默认输入设备不可用或格式不受支持。")
+      onEnd(L10n.tr("默认输入设备不可用或格式不受支持。"))
       return
     }
     let sink = CallbackAnalyzer { measurement in Task { @MainActor in onMeasurement(measurement) } }
@@ -214,14 +218,14 @@ final class CallbackAnalyzer {
     }
     do { try engine.start() } catch {
       stop()
-      onEnd("麦克风测试启动失败：" + error.localizedDescription)
+      onEnd(L10n.tr("麦克风测试启动失败：") + error.localizedDescription)
       return
     }
     timeout = Task { [weak self] in
       do { try await Task.sleep(for: .seconds(10)) } catch { return }
       guard self?.generation == token else { return }
       self?.stop()
-      onEnd("10 秒本地测试已结束。结果不代表远端听感。")
+      onEnd(L10n.tr("10 秒本地测试已结束。结果不代表远端听感。"))
     }
   }
   func stop() {

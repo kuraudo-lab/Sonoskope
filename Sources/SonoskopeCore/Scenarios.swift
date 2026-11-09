@@ -5,18 +5,18 @@ public enum DemoScenario: String, CaseIterable, Identifiable {
   public var id: String { rawValue }
   public var label: String {
     switch self {
-    case .normal: "正常／静音"
-    case .bluetooth: "设备断连"
-    case .networkOnly: "仅网络探测异常"
-    case .correlated: "音频与网络同时异常"
-    case .recovered: "断连后恢复"
-    case .unavailable: "采集不可用"
-    case .markedInput: "别人听不清我"
+    case .normal: L10n.tr("正常／静音")
+    case .bluetooth: L10n.tr("设备断连")
+    case .networkOnly: L10n.tr("仅网络探测异常")
+    case .correlated: L10n.tr("音频与网络同时异常")
+    case .recovered: L10n.tr("断连后恢复")
+    case .unavailable: L10n.tr("采集不可用")
+    case .markedInput: L10n.tr("别人听不清我")
     }
   }
   public func events(at date: Date = Date()) -> [DiagnosticEvent] {
     func event(
-      _ kind: EventKind, _ source: String, _ message: String, _ offset: Double = 0,
+      _ kind: EventKind, _ source: String, _ message: LocalizedText, _ offset: Double = 0,
       _ direction: Direction = .shared
     ) -> DiagnosticEvent {
       .init(

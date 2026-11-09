@@ -4,9 +4,9 @@ public enum Direction: String, Codable, CaseIterable, Sendable {
   case input, output, shared
   public var label: String {
     switch self {
-    case .input: "我的声音"
-    case .output: "我听到的声音"
-    case .shared: "输入与输出"
+    case .input: L10n.tr("我的声音")
+    case .output: L10n.tr("我听到的声音")
+    case .shared: L10n.tr("输入与输出")
     }
   }
 }
@@ -21,9 +21,9 @@ public struct DiagnosticEvent: Identifiable, Codable, Sendable {
   public var kind: EventKind
   public var direction: Direction
   public var source: String
-  public var message: String
+  public var message: LocalizedText
   public init(
-    kind: EventKind, direction: Direction = .shared, source: String, message: String,
+    kind: EventKind, direction: Direction = .shared, source: String, message: LocalizedText,
     date: Date = Date()
   ) {
     id = UUID()
@@ -41,11 +41,11 @@ public struct Incident: Identifiable, Codable, Sendable {
   public var started: Date
   public var lastSeen: Date
   public var recovered: Date?
-  public var endReason: String?
+  public var endReason: LocalizedText?
   public var direction: Direction
-  public var title: String
-  public var explanation: String
-  public var nextStep: String
+  public var title: LocalizedText
+  public var explanation: LocalizedText
+  public var nextStep: LocalizedText
   public var confidence: Confidence
   public var occurrences: Int = 1
   public var evidence: [DiagnosticEvent]
@@ -159,8 +159,9 @@ public struct DiagnosticEngine: Sendable {
     lastAlert.removeAll()
   }
   private mutating func upsert(
-    _ e: DiagnosticEvent, key: String, title: String, confidence: Confidence, explanation: String,
-    next: String
+    _ e: DiagnosticEvent, key: String, title: LocalizedText, confidence: Confidence,
+    explanation: LocalizedText,
+    next: LocalizedText
   ) -> Incident {
     if let i = incidents.lastIndex(where: { $0.key == key && $0.isActive }) {
       incidents[i].lastSeen = e.date
