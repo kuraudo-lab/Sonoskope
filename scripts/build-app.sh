@@ -4,8 +4,14 @@ cd "$(dirname "$0")/.."
 source scripts/distribution-config.sh
 configuration="${1:-release}"
 if [[ "$distribution" == developer-id ]]; then require_distribution_credentials; fi
-swift build -c "$configuration"
-bin_path="$(swift build -c "$configuration" --show-bin-path)"
+build_options=(-c "$configuration")
+if [[ -n "${SONOSKOPE_ARCHITECTURE:-}" ]]; then
+  case "$SONOSKOPE_ARCHITECTURE" in arm64|x86_64) ;; *) echo 'Unsupported architecture' >&2; exit 1 ;; esac
+  build_options+=(--build-system native --triple "${SONOSKOPE_ARCHITECTURE}-apple-macosx14.2"
+    --scratch-path ".build/distribution-${SONOSKOPE_ARCHITECTURE}")
+fi
+swift build "${build_options[@]}"
+bin_path="$(swift build "${build_options[@]}" --show-bin-path)"
 app_path="$PWD/dist/Sonoskope.app"
 mkdir -p "$app_path/Contents/MacOS" "$app_path/Contents/Resources"
 cp "$bin_path/Sonoskope" "$app_path/Contents/MacOS/Sonoskope"

@@ -11,6 +11,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   build:
+    if: vars.SONOSKOPE_RELEASE_SOURCE != 'local'
     name: Build ${{ matrix.arch }}
     strategy:
       fail-fast: false

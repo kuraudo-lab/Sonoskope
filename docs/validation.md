@@ -70,3 +70,10 @@ The corrected lookup explicitly uses the installed resource bundle. Local regres
 - Added MIT LICENSE and bundled it with the app.
 - Added Developer ID signing, hardened runtime with the audio-input entitlement, secure timestamps, notarytool submission/status gates, stapling, and Gatekeeper checks. Mocked tests passed for wrong identity, rejected/pending submissions and the accepted/stapled path, including non-default keychains.
 - The preview ZIP/DMG/PKG pipeline, relocated-app localization checks, and matching installer-payload checks passed on arm64. Actual Developer ID signing/notarization and clean-machine installation remain pending certificate and keychain-profile setup. No existing public download has been upgraded or relabeled as notarized by this tooling change.
+
+## v0.1.7 distribution preparation
+
+- Developer ID Application and Installer certificates match the locally generated private keys and the expected developer team. Private keys remain in the local keychain; they are not committed or uploaded to CI.
+- The Intel app passed Developer ID authority, hardened-runtime, secure-timestamp and audio-input-entitlement checks. Four relocated-app language checks and a passive runtime smoke check passed on the Apple Silicon host through Rosetta. The smoke check had microphone/output capture disabled and wrote no live incidents.
+- Both Intel and Apple Silicon release binaries compile from explicit architecture-specific SwiftPM builds. The signing verifier reads piped entitlement bytes before parsing, supporting Python 3.15's seek requirements.
+- Apple notarization submission and final package/Gatekeeper verification are tracked separately; preparing signed binaries does not itself establish notarization acceptance.

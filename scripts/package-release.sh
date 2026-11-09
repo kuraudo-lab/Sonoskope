@@ -18,7 +18,7 @@ if [[ "$version" != "$actual_version" ]]; then
   echo "Tag version does not match Info.plist" >&2
   exit 1
 fi
-bash scripts/build-app.sh
+SONOSKOPE_ARCHITECTURE="$architecture" bash scripts/build-app.sh
 bash scripts/check-app-localizations.sh dist/Sonoskope.app
 actual_arch="$(lipo -archs dist/Sonoskope.app/Contents/MacOS/Sonoskope)"
 if [[ "$actual_arch" != "$architecture" ]]; then

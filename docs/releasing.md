@@ -1,6 +1,6 @@
 # Release automation
 
-The `Release` workflow runs on a pushed semantic version tag (for example `v0.1.0`), or a manual dispatch selecting an existing version tag. It does not publish from `main`.
+The `Release` workflow runs on a pushed semantic version tag (for example `v0.1.0`), or a manual dispatch selecting an existing version tag. It does not publish from `main`. When `SONOSKOPE_RELEASE_SOURCE=local`, tag-based release jobs are skipped; notarized packages are built and published from the signing Mac as described in [distribution setup](distribution.md).
 
 1. Update `App/Info.plist`'s short version and create English release notes in `docs/releases/<version>.md`.
 2. Run tests, build, and runtime acceptance checks. Commit the result.

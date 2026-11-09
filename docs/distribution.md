@@ -40,8 +40,11 @@ export SONOSKOPE_APPLICATION_IDENTITY='Developer ID Application: Your Name (TEAM
 export SONOSKOPE_INSTALLER_IDENTITY='Developer ID Installer: Your Name (TEAMID)'
 export SONOSKOPE_NOTARY_PROFILE=sonoskope-notary
 release_version=$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' App/Info.plist)
-bash scripts/package-release.sh "$release_version" "$(uname -m)"
+bash scripts/package-release.sh "$release_version" arm64
+bash scripts/package-release.sh "$release_version" x86_64
 ```
+
+The package script explicitly builds the requested architecture in its own SwiftPM scratch directory. Intel localization/startup verification on Apple Silicon requires Rosetta. Packages are built sequentially because they share the staging app.
 
 If the signing keys or notary profile use a non-default keychain, set `SONOSKOPE_SIGNING_KEYCHAIN` or `SONOSKOPE_NOTARY_KEYCHAIN` to its path. Keychain must be unlocked. The script never exports signing keys.
 
@@ -55,6 +58,12 @@ The pipeline:
 6. Checks both containers' payloads and creates checksums **after** signing and stapling.
 
 Submission JSON is retained under `.local/notarization/`. If Apple times out, inspect the saved submission ID with `notarytool info` or `wait`, using the same keychain profile. Do not blindly resubmit an in-progress submission. Rejected submissions can be investigated with `notarytool log`.
+
+## Publishing locally signed packages
+
+When private signing keys stay on a developer Mac, set the repository variable `SONOSKOPE_RELEASE_SOURCE` to `local` before pushing a release tag. This skips the automatic tag-based release job, preventing it from publishing preview packages over the locally notarized release. Ordinary push/PR checks continue to run.
+
+After both architectures pass packaging, publish only the matching version's six packages and checksums to a new GitHub prerelease. Verify the published checksums against the local packages. Do not replace existing published version assets. Unset this variable (or set it to `ci`) only after configuring the CI signing credentials below.
 
 ## GitHub Actions (optional)
 
