@@ -17,6 +17,7 @@ if [[ "$version" != "$actual_version" ]]; then
   exit 1
 fi
 bash scripts/build-app.sh
+bash scripts/check-app-localizations.sh dist/Sonoskope.app
 actual_arch="$(lipo -archs dist/Sonoskope.app/Contents/MacOS/Sonoskope)"
 if [[ "$actual_arch" != "$architecture" ]]; then
   echo "Built architecture does not match asset label: $actual_arch" >&2

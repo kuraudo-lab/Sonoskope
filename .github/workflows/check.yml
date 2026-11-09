@@ -13,5 +13,7 @@ jobs:
         run: swift test
       - name: Build app
         run: bash scripts/build-app.sh
+      - name: Check installed app localizations
+        run: bash scripts/check-app-localizations.sh dist/Sonoskope.app
       - name: Check whitespace
         run: git diff --check

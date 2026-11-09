@@ -31,3 +31,9 @@ Download packages are developer previews, not a claim that these physical accept
 - The signed packaged app ran with `en-US`, `zh-Hans-CN`, `zh-Hant-TW`, and `ja-JP` preference overrides. Runtime status strings and bundle-resolved microphone permission descriptions matched English, Chinese, Chinese, and English respectively. No audio capture was enabled by these checks.
 - Actual SwiftUI views rendered in both English and Chinese: seven isolated scenarios, charts, and settings. Status, settings, and charts were visually inspected for translation and wrapping. This was offscreen rendering, not desktop interaction.
 - Both localizations and native permission resources were included in the release app and passed strict signature verification. No new physical audio or permission-dialog acceptance claims are made by this localization change.
+
+## v0.1.2 packaging correction
+
+Post-download checks caught a startup crash in the cloud-built v0.1.1 app: that SwiftPM accessor searched the app root and CI build directory instead of `Contents/Resources`. v0.1.1 was withdrawn to draft. Its passing local checks were not treated as proof of the downloaded app working.
+
+The corrected lookup explicitly uses the installed resource bundle. Local regression tests still pass (36 tests). New packaging/CI checks relocate the signed app, launch it with four language preferences, verify translated text and native permission descriptions, and require the resource URL to remain inside the relocated app. Release uploads are gated on these checks for each architecture.

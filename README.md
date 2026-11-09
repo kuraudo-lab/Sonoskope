@@ -12,7 +12,7 @@ Sonoskope asks two questions: **is my local input healthy?** and **where might t
 
 ## Language
 
-Starting with v0.1.1, the interface follows the macOS preferred-language order and supports English and Chinese. The first supported preference is used; if none is supported, it falls back to English. Chinese regional/script variants share the Simplified Chinese translation. Restart Sonoskope after changing system or app language.
+Starting with v0.1.2, the interface follows the macOS preferred-language order and supports English and Chinese. The first supported preference is used; if none is supported, it falls back to English. Chinese regional/script variants share the Simplified Chinese translation. Restart Sonoskope after changing system or app language.
 
 Menus, settings, charts, notifications, permission descriptions, and diagnostics are localized. Incident history stores message keys and parameters and can be displayed in either language. Known v0.1.0 messages migrate on read; device/app names, system errors, and unknown historical text retain their original wording. The original v0.1.0 download remains unchanged.
 

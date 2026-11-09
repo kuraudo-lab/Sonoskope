@@ -321,7 +321,7 @@ struct SettingsView: View {
       Section {
         Text(
           L10n.tr(
-            "Sonoskope \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1.1") · macOS 14.2+\n系统层诊断；不使用 Zoom／Teams 接口。"
+            "Sonoskope \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1.2") · macOS 14.2+\n系统层诊断；不使用 Zoom／Teams 接口。"
           )
         ).font(.caption)
           .foregroundStyle(.secondary)

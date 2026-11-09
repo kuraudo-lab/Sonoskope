@@ -23,9 +23,20 @@ public enum AppLanguage: String, CaseIterable, Sendable {
 public enum L10n {
   public static var language: AppLanguage { AppLanguage.resolve(Locale.preferredLanguages) }
   public static var locale: Locale { Locale(identifier: language.rawValue) }
+  // SwiftPM toolchains disagree on whether Bundle.module searches bundleURL or
+  // resourceURL. Prefer the standard installed macOS app location explicitly.
+  private static let resourceBundle: Bundle = {
+    if let url = Bundle.main.resourceURL?.appendingPathComponent("Sonoskope_SonoskopeCore.bundle"),
+      let bundle = Bundle(url: url)
+    {
+      return bundle
+    }
+    return Bundle.module
+  }()
+  public static var resourceBundleURL: URL { resourceBundle.bundleURL }
   static let catalogs: [AppLanguage: [String: String]] = Dictionary(
     uniqueKeysWithValues: AppLanguage.allCases.map { language in
-      let url = Bundle.module.url(
+      let url = resourceBundle.url(
         forResource: "Localizable", withExtension: "strings",
         subdirectory: nil, localization: language.rawValue)
       let values =

@@ -4,6 +4,22 @@ import SwiftUI
 
 @main enum SonoskopeMain {
   @MainActor static func main() {
+    if CommandLine.arguments.contains("--localization-check") {
+      // Package verification only: no app windows, collectors, or permissions.
+      let payload = [
+        "language": L10n.language.rawValue,
+        "soundLevel": L10n.tr("声音电平"),
+        "resourceBundle": L10n.resourceBundleURL.path,
+        "microphonePermission": Bundle.main.localizedInfoDictionary?["NSMicrophoneUsageDescription"]
+          as? String ?? "",
+      ]
+      if let data = try? JSONSerialization.data(withJSONObject: payload, options: [.sortedKeys]),
+        let output = String(data: data, encoding: .utf8)
+      {
+        print(output)
+      }
+      return
+    }
     let app = NSApplication.shared
     let delegate = AppDelegate()
     app.delegate = delegate

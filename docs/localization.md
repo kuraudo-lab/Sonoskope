@@ -16,6 +16,12 @@ Sonoskope supports English (`en`) and Chinese (`zh-Hans`). `AppLanguage.resolve`
 
 `LocalizedText` decodes the plain strings from v0.1.0. Known static text and interpolated templates are recovered; unknown strings are preserved verbatim. New history/export fields contain `{key, arguments, verbatim}` objects. This structured format requires v0.1.1 or later; the v0.1.0 app cannot read new history files.
 
+## Installed resource lookup
+
+`L10n` explicitly opens the resource bundle in the app's `Contents/Resources` directory. SwiftPM's generated `Bundle.module` accessor differs across Xcode/SwiftPM toolchains and is used only as a development/test fallback. The withdrawn v0.1.1 cloud build exposed this difference during download validation.
+
+`bash scripts/check-app-localizations.sh` relocates the signed app to a temporary directory, launches its noninteractive `--localization-check` mode for four language preferences, and asserts the resolved resource path is inside that app. Both CI and release packaging run this check before artifacts are uploaded.
+
 ## Verification
 
 `swift test` covers language order/fallback, catalog and format-specifier parity, interpolation preservation, legacy history decoding, history round trips, and English demo diagnostics. `bash scripts/render-check.sh` renders the actual views separately with `-AppleLanguages '(en)'` and `-AppleLanguages '(zh-Hans)'`, without changing system preferences.
