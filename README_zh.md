@@ -18,11 +18,11 @@ macOS 14.2+ · Apple Silicon 与 Intel · 中文与英文界面
 
 ## 看看声音中断前后发生了什么
 
-![Sonoskope 显示模拟的声音中断及网络证据](assets/demo/status-zh.png)
+![Sonoskope 八秒演示：异常提示、时间线、设备证据与采集不可用](assets/demo/sonoskope-demo.gif)
 
 *真实应用界面，使用模拟数据。演示期间暂停实时采集，不发送系统通知，也不写入真实问题历史。*
 
-[观看 34 秒英文演示 →](assets/demo/sonoskope-demo.gif)
+8 秒循环演示，每约 2 秒切换一个场景。[查看中文界面大图 →](assets/demo/status-zh.png)
 
 ## 让排查有一个清晰的起点
 

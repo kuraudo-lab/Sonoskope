@@ -18,11 +18,11 @@ macOS 14.2+ · Apple Silicon & Intel · English & 简体中文
 
 ## See what happened when the sound broke up
 
-![Sonoskope showing a simulated audio interruption and network evidence](assets/demo/status-en.png)
+![Eight-second Sonoskope demo: incidents, timeline, device evidence, and unavailable capture](assets/demo/sonoskope-demo.gif)
 
 *Actual Sonoskope interface with simulated data. Demo scenarios pause live collectors and do not send notifications or save incidents to your live history.*
 
-[Watch the 34-second demo →](assets/demo/sonoskope-demo.gif)
+Four scenes, about two seconds each. [View the full-size interface screenshot →](assets/demo/status-en.png)
 
 ## A clearer starting point for troubleshooting
 

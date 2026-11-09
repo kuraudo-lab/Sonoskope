@@ -53,8 +53,8 @@ touch "$run_dir/recording-started"
 wait "$capture_pid" || { cat "$run_dir/capture.log" >&2; echo 'Screen Recording permission may be required for the launching terminal/app.' >&2; exit 1; }
 capture_pid=''
 [[ -s "$run_dir/capture.mov" ]] || { cat "$run_dir/capture.log" >&2; echo 'No recording produced. Check macOS Screen Recording permission.' >&2; exit 1; }
-ffmpeg -hide_banner -loglevel error -y -i "$run_dir/capture.mov" -an \
-  -vf 'scale=trunc(iw/2)*2:trunc(ih/2)*2' -r 30 -c:v libx264 -crf 20 -pix_fmt yuv420p -movflags +faststart "$run_dir/sonoskope-demo-en.mp4"
+ffmpeg -hide_banner -loglevel error -y -i "$run_dir/capture.mov" -t 8 -an \
+  -vf 'setpts=(PTS-STARTPTS)*8/34,scale=trunc(iw/2)*2:trunc(ih/2)*2' -r 30 -c:v libx264 -crf 20 -pix_fmt yuv420p -movflags +faststart "$run_dir/sonoskope-demo-en.mp4"
 ffprobe -v error -show_entries format=duration:stream=codec_name,width,height,codec_type -of json "$run_dir/sonoskope-demo-en.mp4" >"$run_dir/verification.json"
 python3 - "$run_dir/verification.json" <<'PY'
 import json, sys
@@ -62,13 +62,13 @@ with open(sys.argv[1]) as f: result=json.load(f)
 streams=result['streams']
 assert len(streams)==1 and streams[0]['codec_type']=='video', 'Expected silent video only'
 assert streams[0]['codec_name']=='h264', 'Expected H.264'
-assert 33 <= float(result['format']['duration']) <= 35, 'Unexpected recording duration'
+assert 7.9 <= float(result['format']['duration']) <= 8.1, 'Unexpected recording duration'
 assert streams[0]['width'] >= 1000 and streams[0]['height'] >= 800, 'Unexpected capture size'
 print(json.dumps(result, indent=2))
 PY
 mkdir -p dist/demo
 cp "$run_dir/sonoskope-demo-en.mp4" dist/demo/sonoskope-demo-en.mp4
-ffmpeg -hide_banner -loglevel error -y -ss 11 -i dist/demo/sonoskope-demo-en.mp4 -frames:v 1 dist/demo/poster.png
+ffmpeg -hide_banner -loglevel error -y -ss 3 -i dist/demo/sonoskope-demo-en.mp4 -frames:v 1 dist/demo/poster.png
 ffmpeg -hide_banner -loglevel error -y -i dist/demo/sonoskope-demo-en.mp4 \
   -filter_complex '[0:v]fps=2,scale=720:-1:flags=lanczos,split[a][b];[a]palettegen=stats_mode=diff[p];[b][p]paletteuse=dither=bayer' \
   -loop 0 dist/demo/sonoskope-demo.gif
