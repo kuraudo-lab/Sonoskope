@@ -2,6 +2,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 swift build
+bash scripts/build-icon.sh
 bin_path="$(swift build --show-bin-path)"
 check_app="$PWD/.local/RenderCheck.app"
 mkdir -p "$check_app/Contents/MacOS" "$PWD/.local/render-check"
@@ -21,6 +22,7 @@ info.update(CFBundleIdentifier='lab.kuraudo.Sonoskope.RenderCheck',CFBundleExecu
 with open(app/'Contents/Info.plist','wb') as f: plistlib.dump(info,f)
 resources=app/'Contents/Resources'
 resources.mkdir(exist_ok=True)
+shutil.copy2(".build/AppIcon.icns",str(resources/"AppIcon.icns"))
 for bundle in list(binary_directory.glob('*.bundle'))+list(Path('App').glob('*.lproj')):
     target=resources/bundle.name
     if target.exists(): shutil.rmtree(str(target))

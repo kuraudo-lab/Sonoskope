@@ -11,9 +11,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Test
         run: swift test
-      - name: Build app
-        run: bash scripts/build-app.sh
-      - name: Check installed app localizations
-        run: bash scripts/check-app-localizations.sh dist/Sonoskope.app
+      - name: Build and verify distributions
+        run: |
+          release_version="$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' App/Info.plist)"
+          bash scripts/package-release.sh "$release_version" "$(uname -m)"
       - name: Check whitespace
         run: git diff --check

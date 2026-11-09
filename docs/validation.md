@@ -56,3 +56,9 @@ The corrected lookup explicitly uses the installed resource bundle. Local regres
 - The user confirmed a separate missing-permission state after an ad-hoc rebuild. A local Apple Development signing identity now preserves identity across local rebuilds; this is not Developer ID distribution signing. No key is exported or committed. Missing permission is now prominent in the status UI.
 - Temporary instrumentation recorded only state and numeric metrics and was removed from shipping code. The explicit `--microphone-check` path remains available for repeatable hardware checks and never runs during passive smoke tests or CI.
 - The user then confirmed automatic capture with Voice Memos on the built-in microphone: the purple curve and application labels appeared, and monitoring returned to automatic standby after recording stopped. This is separate from the bounded developer check.
+
+## v0.1.5 installers and shared branding
+
+- 69 regression tests pass. The shared branded image replaces both hard-coded waveform locations; the status window was rendered and inspected with the packaged icon. The menu bar uses the same icon at 18 points, without template tinting.
+- Local arm64 DMG mounts read-only with an Applications link. The PKG expands to a single Sonoskope.app payload, targets `/Applications`, disables relocation and has no installer scripts. Payload signatures, version, architecture and icon are checked, and both containers contain identical executable/icon bytes.
+- Installation into the system Applications directory and clean-machine Gatekeeper acceptance are not claimed by payload inspection. Distributed app builds remain ad-hoc signed; DMG/PKG containers are unsigned and not notarized.

@@ -8,7 +8,13 @@ Sonoskope 围绕两个问题收集证据：**我的本地输入是否正常？**
 
 ## 下载
 
-[GitHub Releases](https://github.com/kuraudo-lab/Sonoskope/releases) 提供 Apple Silicon 和 Intel ZIP 包及 SHA-256 校验值。这些版本为 **ad-hoc 签名、未经 Apple 公证的开发预览版**，Gatekeeper 可能阻止直接打开。也可按下面的步骤从源码构建。
+[GitHub Releases](https://github.com/kuraudo-lab/Sonoskope/releases) 提供 Apple Silicon（`arm64`）和 Intel（`x86_64`）下载及 SHA-256 校验值：
+
+- **DMG（推荐）**：打开磁盘映像，将 Sonoskope 拖入 Applications；推出映像后，从“应用程序”启动。
+- **PKG**：打开安装器，将应用安装或更新到 `/Applications/Sonoskope.app`，可能需要管理员授权。仅安装应用，不包含安装脚本或后台服务。
+- **ZIP**：保留给希望手动放置应用的用户。
+
+更新前请退出正在运行的旧版本。0.1.5 起，应用包、状态窗口和菜单栏均使用新图标。这些版本仍为 **ad-hoc 签名、未经 Apple 公证的开发预览版**，PKG 安装器本身未签名；更换格式不会消除 Gatekeeper 检查。也可按下面的步骤从源码构建。
 
 ## 语言
 
@@ -94,7 +100,7 @@ open -n dist/Sonoskope.app --args --demo correlated
 
 ## 自动发布
 
-更新应用版本和英文发布说明后，推送带注释的语义化版本标签。GitHub Actions 分别测试、构建两个架构，校验 ZIP 包后发布预览版本。详见[发布流程](docs/releasing.md)。
+更新应用版本和英文发布说明后，推送带注释的语义化版本标签。GitHub Actions 分别测试、构建两个架构，校验 DMG、PKG、ZIP 和校验值后发布预览版本。详见[发布流程](docs/releasing.md)。
 
 ## 源码结构
 

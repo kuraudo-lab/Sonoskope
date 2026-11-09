@@ -43,8 +43,8 @@ import SwiftUI
       self?.showStatus()
     }
     statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-    statusItem.button?.image = NSImage(
-      systemSymbolName: "waveform.path", accessibilityDescription: L10n.tr("Sonoskope 音频诊断"))
+    NSApp.applicationIconImage = BrandAssets.applicationIcon
+    statusItem.button?.image = BrandAssets.menuBarIcon
     statusItem.button?.toolTip = L10n.tr("Sonoskope · 查看音频状态")
     statusItem.button?.target = self
     statusItem.button?.action = #selector(statusClicked)
@@ -56,6 +56,8 @@ import SwiftUI
         try? await Task.sleep(for: .seconds(microphoneCheck ? 12 : 7))
         let payload: [String: Any] = [
           "application": "Sonoskope",
+          "appIconBundled": Bundle.main.url(forResource: "AppIcon", withExtension: "icns") != nil,
+          "menuBarIconIsTemplate": statusItem.button?.image?.isTemplate ?? true,
           "interfaceLanguage": L10n.language.rawValue,
           "statusTitle": model.title,
           "microphonePermissionDescription": Bundle.main.localizedInfoDictionary?[

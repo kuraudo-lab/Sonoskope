@@ -25,11 +25,14 @@ if [[ "$actual_arch" != "$architecture" ]]; then
 fi
 asset="Sonoskope-${version}-macos-${architecture}.zip"
 ditto -c -k --sequesterRsrc --keepParent dist/Sonoskope.app "dist/$asset"
-python3 - "$asset" <<'PYTHON'
+bash scripts/package-installers.sh "$version" "$architecture"
+bash scripts/check-release-containers.sh "$version" "$architecture"
+python3 - "$version" "$architecture" <<'PYTHON'
 from pathlib import Path
 import hashlib,sys
-asset=Path('dist')/sys.argv[1]
-digest=hashlib.sha256(asset.read_bytes()).hexdigest()
-asset.with_suffix(asset.suffix+'.sha256').write_text(digest+'  '+asset.name+'\n')
-print(asset.name, digest)
+for extension in ['zip','dmg','pkg']:
+    asset=Path('dist')/('Sonoskope-'+sys.argv[1]+'-macos-'+sys.argv[2]+'.'+extension)
+    digest=hashlib.sha256(asset.read_bytes()).hexdigest()
+    asset.with_suffix(asset.suffix+'.sha256').write_text(digest+'  '+asset.name+'\n')
+    print(asset.name,digest)
 PYTHON

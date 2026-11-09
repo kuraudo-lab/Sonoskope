@@ -8,7 +8,13 @@ Sonoskope asks two questions: **is my local input healthy?** and **where might t
 
 ## Download
 
-[GitHub Releases](https://github.com/kuraudo-lab/Sonoskope/releases) provides Apple Silicon and Intel ZIPs with SHA-256 checksums. These builds are **ad-hoc signed, unnotarized developer previews**; Gatekeeper may prevent direct opening. Local source builds remain available below.
+[GitHub Releases](https://github.com/kuraudo-lab/Sonoskope/releases) provides Apple Silicon (`arm64`) and Intel (`x86_64`) downloads with SHA-256 checksums:
+
+- **DMG (recommended):** open the disk image, drag Sonoskope onto Applications, then eject the image and launch the app from Applications.
+- **PKG:** open the installer to install or update `/Applications/Sonoskope.app`. It may request administrator authorization. It installs only the app, without scripts or background services.
+- **ZIP:** portable archive for users who prefer manual placement.
+
+Quit any running copy before updating. Versions starting with 0.1.5 include the new icon in the app bundle, status window and menu bar. These builds are **ad-hoc signed, unnotarized developer previews**; the PKG container is unsigned. Changing the package format does not remove Gatekeeper checks. Local source builds remain available below.
 
 ## Language
 
@@ -92,7 +98,7 @@ The smoke mode uses real device/process/path/probe APIs, leaves microphone and o
 
 ## Release workflow
 
-Push an annotated semantic version tag after updating the bundle version and English release notes. GitHub Actions tests/builds both architectures and publishes a prerelease only after both ZIPs pass checksum verification. See [release automation](docs/releasing.md).
+Push an annotated semantic version tag after updating the bundle version and English release notes. GitHub Actions tests/builds both architectures and publishes a prerelease only after both architectures pass package and checksum verification. See [release automation](docs/releasing.md).
 
 ## Source layout
 

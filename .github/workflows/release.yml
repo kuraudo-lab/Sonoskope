@@ -44,6 +44,8 @@ jobs:
           name: Sonoskope-${{ matrix.arch }}
           path: |
             dist/*.zip
+            dist/*.dmg
+            dist/*.pkg
             dist/*.sha256
           if-no-files-found: error
           retention-days: 14
@@ -70,8 +72,11 @@ jobs:
         run: |
           set -euo pipefail
           version="${RELEASE_TAG#v}"
-          test -f "release-assets/Sonoskope-${version}-macos-arm64.zip"
-          test -f "release-assets/Sonoskope-${version}-macos-x86_64.zip"
+          for arch in arm64 x86_64; do
+            for format in dmg pkg zip; do
+              test -f "release-assets/Sonoskope-${version}-macos-${arch}.${format}"
+            done
+          done
           cat release-assets/*.sha256 > release-assets/SHA256SUMS
           (cd release-assets && sha256sum --check SHA256SUMS)
           notes="docs/releases/${version}.md"
@@ -84,5 +89,5 @@ jobs:
           else
             gh release create "$RELEASE_TAG" --verify-tag --draft --prerelease --title "Sonoskope $RELEASE_TAG" --notes-file "$notes"
           fi
-          gh release upload "$RELEASE_TAG" release-assets/*.zip release-assets/SHA256SUMS --clobber
+          gh release upload "$RELEASE_TAG" release-assets/*.zip release-assets/*.dmg release-assets/*.pkg release-assets/SHA256SUMS --clobber
           gh release edit "$RELEASE_TAG" --draft=false

@@ -9,7 +9,10 @@ struct StatusView: View {
   var body: some View {
     VStack(spacing: 0) {
       HStack {
-        Label("Sonoskope", systemImage: "waveform.path").font(.headline)
+        Image(nsImage: BrandAssets.applicationIcon).resizable()
+          .frame(width: 28, height: 28).clipShape(RoundedRectangle(cornerRadius: 6))
+          .accessibilityHidden(true)
+        Text("Sonoskope").font(.headline)
         Spacer()
         if model.demoScenario != nil {
           Text(L10n.tr("模拟数据")).font(.caption).foregroundStyle(.orange)
@@ -379,7 +382,7 @@ struct SettingsView: View {
       Section {
         Text(
           L10n.tr(
-            "Sonoskope \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1.4") · macOS 14.2+\n系统层诊断；不使用 Zoom／Teams 接口。"
+            "Sonoskope \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1.5") · macOS 14.2+\n系统层诊断；不使用 Zoom／Teams 接口。"
           )
         ).font(.caption)
           .foregroundStyle(.secondary)
