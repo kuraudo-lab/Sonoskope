@@ -1,0 +1,17 @@
+name: Check
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  macos:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test
+        run: swift test
+      - name: Build app
+        run: bash scripts/build-app.sh
+      - name: Check whitespace
+        run: git diff --check

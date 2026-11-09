@@ -1,0 +1,88 @@
+name: Release
+on:
+  push:
+    tags:
+      - 'v[0-9]*'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  build:
+    name: Build ${{ matrix.arch }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            arch: arm64
+          - runner: macos-15-intel
+            arch: x86_64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate version tag
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+          REF_TYPE: ${{ github.ref_type }}
+        run: |
+          test "$REF_TYPE" = tag
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          echo "VERSION=${RELEASE_TAG#v}" >> "$GITHUB_ENV"
+      - name: Run regression tests
+        run: swift test
+      - name: Build and package app
+        env:
+          RELEASE_ARCH: ${{ matrix.arch }}
+        run: bash scripts/package-release.sh "$VERSION" "$RELEASE_ARCH"
+      - name: Upload distribution files
+        uses: actions/upload-artifact@v4
+        with:
+          name: Sonoskope-${{ matrix.arch }}
+          path: |
+            dist/*.zip
+            dist/*.sha256
+          if-no-files-found: error
+          retention-days: 14
+  publish:
+    name: Publish release
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: Sonoskope-*
+          merge-multiple: true
+          path: release-assets
+      - name: Verify assets and publish developer preview
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${RELEASE_TAG#v}"
+          test -f "release-assets/Sonoskope-${version}-macos-arm64.zip"
+          test -f "release-assets/Sonoskope-${version}-macos-x86_64.zip"
+          cat release-assets/*.sha256 > release-assets/SHA256SUMS
+          (cd release-assets && sha256sum --check SHA256SUMS)
+          notes="docs/releases/${version}.md"
+          test -f "$notes"
+          if gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft > release-state.txt 2>/dev/null; then
+            if ! grep -qx true release-state.txt; then
+              echo "Release already published; refusing to replace its assets."
+              exit 1
+            fi
+          else
+            gh release create "$RELEASE_TAG" --verify-tag --draft --prerelease --title "Sonoskope $RELEASE_TAG" --notes-file "$notes"
+          fi
+          gh release upload "$RELEASE_TAG" release-assets/*.zip release-assets/SHA256SUMS --clobber
+          gh release edit "$RELEASE_TAG" --draft=false

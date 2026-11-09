@@ -1,0 +1,111 @@
+<div id="audio-diagnostic-preview">
+  <div class="preview-controls"><label>演示场景 <select id="audio-scenario"><option value="bluetooth">蓝牙断连</option><option value="network">音频异常与网络波动同时发生</option><option value="normal">未发现异常</option><option value="recovered">已恢复</option><option value="unavailable">音频监测不可用</option></select></label><span>交互示意 · 模拟数据</span></div>
+  <div class="stage viz-dotted-background">
+    <div class="menu"><span class="brand"><i data-lucide="audio-lines" aria-hidden="true"></i> 音频助手</span><div><button id="open-status">查看状态</button><button id="open-settings" aria-label="打开设置"><i data-lucide="settings-2" aria-hidden="true"></i></button></div></div>
+    <section class="notice" id="audio-notice" aria-label="问题提醒"><div><b id="notice-title">耳机连接中断</b><p id="notice-body">刚刚 · 本地输入和输出可能受影响</p></div><button id="notice-open">查看</button></section>
+    <section class="window" aria-label="音频助手窗口">
+      <header><strong id="window-title">音频状态</strong><button id="close-window" aria-label="关闭窗口"><i data-lucide="x" aria-hidden="true"></i></button></header>
+      <div id="status-panel">
+        <div class="headline"><span id="health-label" class="tag">连接中断</span><h2 id="health-title">耳机连接中断</h2><p id="health-description">14:32:08 检测到耳机断开。正在等待重新连接。</p></div>
+        <div class="directions"><div><span>我的声音</span><strong id="input-status">麦克风设备不可用</strong></div><div><span>我听到的声音</span><strong id="output-status">耳机输出不可用</strong></div></div>
+        <div class="evidence"><div><span>蓝牙</span><b id="bt-status">已断开</b></div><div><span>网络探测</span><b id="net-status">未见异常</b></div><div><span>音频分析</span><b id="pcm-status">应用输出未见异常</b></div></div>
+        <section class="incident" id="incident"><div class="incident-top"><b>最近问题</b><span id="incident-time">14:32:08</span></div><p id="incident-summary">设备连接中断已确认；尚不能确定断开原因。</p><details id="evidence-details"><summary>查看依据与时间线</summary><ol id="event-list"><li>14:32:08 · 蓝牙报告断开</li><li>14:32:08 · 耳机音频设备移除</li><li>14:32:09 · 网络探测未见异常</li></ol><p class="quiet">本机没有对方最终听感或耳机实际发声的测量。</p></details></section>
+        <div class="next" id="next"><span class="quiet">建议下一步</span><p id="next-step">重新连接耳机，并在会议应用中确认输入和输出设备。</p></div>
+        <footer><button id="mark-problem">刚才声音有问题</button><button id="pause-monitor">暂停监测</button></footer>
+        <p id="local-feedback" role="status" aria-live="polite"></p>
+      </div>
+      <div id="settings-panel" hidden>
+        <div class="setting"><div><b>登录后启动</b><p>在菜单栏运行</p></div><input type="checkbox" aria-label="登录后启动" checked></div>
+        <div class="setting"><div><b>检测应用输出音频</b><p>已授权 · 只保存指标，不保存录音</p></div><input id="capture-toggle" type="checkbox" aria-label="检测应用输出音频" checked></div>
+        <div class="setting"><div><b>轻量网络探测</b><p>发送少量测试数据；不代表会议媒体质量</p></div><input id="network-toggle" type="checkbox" aria-label="轻量网络探测" checked></div>
+        <div class="setting"><div><b>问题提醒</b><p>仅提醒明确中断或持续异常；默认无声</p></div><input id="notification-toggle" type="checkbox" aria-label="问题提醒" checked></div>
+        <div class="setting"><div><b>麦克风检测</b><p>仅在主动测试时开启，可能改变蓝牙状态</p></div><span class="quiet">按需授权</span></div>
+        <div class="setting"><label for="retention"><b>问题记录保留</b></label><select id="retention"><option>24 小时</option><option>7 天</option><option>不保留到下次启动</option></select></div>
+        <div class="setting"><label for="shortcut"><b>呼出窗口</b></label><span id="shortcut">菜单栏 · 查看状态</span></div>
+        <footer><button id="back-status">返回音频状态</button></footer>
+      </div>
+    </section>
+  </div>
+</div>
+<style>
+#audio-diagnostic-preview { --a-bg:light-dark(#fafafa,#232426);--a-ink:light-dark(#202124,#f1f1f2);--a-muted:light-dark(#61666c,#b4b8be);--a-line:light-dark(#dedfe2,#45474c);--a-surface:light-dark(#f0f1f3,#303237);--a-warn:light-dark(#845100,#f1c275);color:var(--a-ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14px;line-height:1.55; }
+#audio-diagnostic-preview * { box-sizing:border-box; }
+#audio-diagnostic-preview [hidden] { display:none !important; }
+#audio-diagnostic-preview .preview-controls { display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px;padding-right:85px; }
+#audio-diagnostic-preview .preview-controls span { color:var(--a-muted);font-size:12px; }
+#audio-diagnostic-preview .stage { padding:20px 12px; }
+#audio-diagnostic-preview .menu { display:flex;justify-content:space-between;align-items:center;gap:10px;max-width:500px;margin:0 auto 16px;background:var(--a-surface);padding:8px 12px;border-radius:10px; }
+#audio-diagnostic-preview .menu>div,.brand { display:flex;align-items:center;gap:8px; }
+#audio-diagnostic-preview svg { width:17px;height:17px; }
+#audio-diagnostic-preview button,#audio-diagnostic-preview select { font:inherit;color:var(--a-ink);background:var(--a-bg);border:1px solid var(--a-line);border-radius:7px;padding:6px 10px;max-width:100%; }
+#audio-diagnostic-preview button { display:inline-flex;align-items:center;justify-content:center;gap:6px; }
+#audio-diagnostic-preview button:hover { background:var(--a-surface); }
+#audio-diagnostic-preview button:active { opacity:.75; }
+#audio-diagnostic-preview button:focus-visible,#audio-diagnostic-preview select:focus-visible,#audio-diagnostic-preview summary:focus-visible { outline:2px solid #3582d7;outline-offset:3px; }
+#audio-diagnostic-preview .notice { max-width:440px;margin:0 auto 16px;display:flex;align-items:center;gap:16px;justify-content:space-between;background:var(--a-bg);border:1px solid var(--a-line);border-radius:14px;padding:14px 16px;box-shadow:0 4px 14px #0000000a; }
+#audio-diagnostic-preview p { margin:4px 0 0; }
+#audio-diagnostic-preview .notice p { color:var(--a-muted);font-size:12px; }
+#audio-diagnostic-preview .window { max-width:500px;margin:auto;border:1px solid var(--a-line);border-radius:14px;background:var(--a-bg);box-shadow:0 8px 28px #0000000c;overflow:hidden; }
+#audio-diagnostic-preview header { display:flex;justify-content:space-between;align-items:center;padding:12px 18px;border-bottom:1px solid var(--a-line); }
+#audio-diagnostic-preview header button { border:0;background:transparent; }
+#audio-diagnostic-preview #status-panel,#audio-diagnostic-preview #settings-panel { padding:22px; }
+#audio-diagnostic-preview .tag { font-size:12px;color:var(--a-warn); }
+#audio-diagnostic-preview h2 { font-size:23px;line-height:1.3;letter-spacing:-.5px;margin:6px 0 8px;font-weight:600; }
+#audio-diagnostic-preview .headline>p,.quiet { color:var(--a-muted);font-size:13px; }
+#audio-diagnostic-preview .directions { padding:18px 0;border-bottom:1px solid var(--a-line);display:grid;gap:12px; }
+#audio-diagnostic-preview .directions>div,.evidence>div { display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap; }
+#audio-diagnostic-preview strong,#audio-diagnostic-preview b { font-weight:600; }
+#audio-diagnostic-preview .evidence { padding:14px 0;display:grid;gap:6px;font-size:13px; }
+#audio-diagnostic-preview .evidence span,.incident-top span { color:var(--a-muted); }
+#audio-diagnostic-preview .incident { background:var(--a-surface);padding:14px;border-radius:10px;margin-top:4px; }
+#audio-diagnostic-preview .incident-top { display:flex;justify-content:space-between;gap:8px;font-size:12px; }
+#audio-diagnostic-preview .incident p { font-size:13px;margin-top:8px; }
+#audio-diagnostic-preview details { margin-top:12px;font-size:12px; }
+#audio-diagnostic-preview ol { margin:10px 0;padding-left:20px; }
+#audio-diagnostic-preview .next { padding-top:16px; }
+#audio-diagnostic-preview footer { display:flex;gap:8px;flex-wrap:wrap;margin-top:20px; }
+#audio-diagnostic-preview #local-feedback { color:var(--a-muted);font-size:12px; }
+#audio-diagnostic-preview .setting { display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 0;border-bottom:1px solid var(--a-line); }
+#audio-diagnostic-preview .setting:first-child { padding-top:0; }
+#audio-diagnostic-preview .setting p { font-size:12px;color:var(--a-muted); }
+#audio-diagnostic-preview input[type=checkbox] { width:18px;height:18px;flex-shrink:0;accent-color:#3679bf; }
+@media(max-width:420px){#audio-diagnostic-preview .stage{padding:12px 0}#audio-diagnostic-preview #status-panel,#audio-diagnostic-preview #settings-panel{padding:16px}#audio-diagnostic-preview .preview-controls{padding-right:0}#audio-diagnostic-preview .preview-controls label{display:grid;gap:5px;width:100%}#audio-diagnostic-preview .setting{flex-wrap:wrap}}
+</style>
+<script>
+(() => {
+const root=document.getElementById('audio-diagnostic-preview');
+const $=id=>root.querySelector('#'+id);
+const cases={
+bluetooth:{label:'连接中断',title:'耳机连接中断',description:'14:32:08 检测到耳机断开。正在等待重新连接。',input:'麦克风设备不可用',output:'耳机输出不可用',bt:'已断开',net:'未见异常',pcm:'应用输出未见异常',summary:'设备连接中断已确认；尚不能确定断开原因。',events:['14:32:08 · 蓝牙报告断开','14:32:08 · 耳机音频设备移除','14:32:09 · 网络探测未见异常'],next:'重新连接耳机，并在会议应用中确认输入和输出设备。',notice:true},
+network:{label:'疑似下行异常',title:'接收音频出现可疑断续',description:'14:32:08 起出现多次可疑断续，与网络探测波动同时发生。',input:'未检测',output:'应用输出疑似断续',bt:'保持连接',net:'探测延迟波动',pcm:'检测到可疑片段',summary:'可能与网络有关。探测路径不等于会议路径，原因尚未确认。',events:['14:32:08 · 应用输出出现可疑片段','14:32:08 · 探测 RTT 从 32 ms 升至 260 ms','14:32:10 · 再次出现可疑片段；蓝牙保持连接'],next:'条件允许时，换用有线网络做对照，观察问题是否持续。',notice:true},
+normal:{label:'监测中',title:'当前未发现异常',description:'正在观察本地播放、设备连接和网络探测结果。',input:'未检测',output:'本地输出未见异常',bt:'保持连接',net:'未见异常',pcm:'未发现可疑片段',summary:'',events:[],next:'如果实际听到异常，点击“刚才声音有问题”保留时间点。',notice:false},
+recovered:{label:'已恢复',title:'耳机已重新连接',description:'当前设备可用。刚才的中断记录仍保留在下方。',input:'设备可用 · 音频未检测',output:'本地输出未见异常',bt:'已重新连接',net:'未见异常',pcm:'未发现可疑片段',summary:'14:32:08 连接中断，14:32:12 恢复。断开原因尚未确认。',events:['14:32:08 · 蓝牙断开；音频设备移除','14:32:12 · 蓝牙重新连接；设备恢复','14:32:13 · 应用输出未见异常'],next:'确认会议应用仍使用期望的输入和输出设备。',notice:false},
+unavailable:{label:'监测不完整',title:'暂时无法分析音频',description:'系统音频录制权限不可用，不能据此判断声音好坏。',input:'未检测',output:'未检测',bt:'保持连接',net:'未见异常',pcm:'无法采集',summary:'',events:[],next:'前往设置检查系统音频录制权限。设备和网络监测仍可继续。',notice:false}
+};
+let state={scenario:'bluetooth',page:'status',open:true,noticeDismissed:false,paused:false};
+const saved=window.openai?.widgetState?.modelContent;if(saved&&cases[saved.scenario])state.scenario=saved.scenario;
+function save(){window.openai?.setWidgetState?.({modelContent:{scenario:state.scenario},privateContent:{page:state.page}})?.catch(()=>{});}
+function render(){
+const c=cases[state.scenario];$('audio-scenario').value=state.scenario;
+const fields={'health-label':c.label,'health-title':c.title,'health-description':c.description,'input-status':c.input,'output-status':c.output,'bt-status':c.bt,'net-status':c.net,'pcm-status':c.pcm,'incident-summary':c.summary,'next-step':c.next,'notice-title':c.title,'notice-body':state.scenario==='bluetooth'?'刚刚 · 本地输入和输出可能受影响':'刚刚 · 与网络波动同时发生，原因待确认'};
+Object.entries(fields).forEach(([id,text])=>$(id).textContent=text);
+$('incident').hidden=!c.summary;$('event-list').replaceChildren(...c.events.map(text=>{const li=document.createElement('li');li.textContent=text;return li;}));
+if(!$('capture-toggle').checked){$('pcm-status').textContent='已关闭';$('output-status').textContent='音频未检测';}
+if(!$('network-toggle').checked)$('net-status').textContent='已关闭';
+if(state.paused){$('health-label').textContent='已暂停';$('health-title').textContent='监测已暂停';$('health-description').textContent='以下为暂停前的记录，不代表当前状态。';}
+$('pause-monitor').textContent=state.paused?'恢复监测':'暂停监测';
+$('audio-notice').hidden=!c.notice||state.noticeDismissed||state.paused||!$('notification-toggle').checked;
+root.querySelector('.window').hidden=!state.open;$('status-panel').hidden=state.page!=='status';$('settings-panel').hidden=state.page!=='settings';$('window-title').textContent=state.page==='settings'?'设置':'音频状态';
+}
+$('audio-scenario').onchange=e=>{state.scenario=e.target.value;state.noticeDismissed=false;state.paused=false;$('local-feedback').textContent='';render();save();};
+function open(page){state.page=page;state.open=true;render();save();}
+$('open-status').onclick=()=>open('status');$('open-settings').onclick=()=>open('settings');$('back-status').onclick=()=>open('status');
+$('close-window').onclick=()=>{state.open=false;render();};
+$('notice-open').onclick=()=>{state.noticeDismissed=true;open('status');$('evidence-details').open=true;};
+$('pause-monitor').onclick=()=>{state.paused=!state.paused;render();};
+$('mark-problem').onclick=()=>{$('local-feedback').textContent='已标记当前时间点。正式产品将在这里选择“别人听不清我”或“我听不清别人”。';};
+['capture-toggle','network-toggle','notification-toggle'].forEach(id=>$(id).onchange=render);
+window.addEventListener('openai:set_globals',e=>{const s=e.detail?.globals?.widgetState?.modelContent;if(s&&cases[s.scenario]){state.scenario=s.scenario;render();}});
+render();
+})();
+</script>
