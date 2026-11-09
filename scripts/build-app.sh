@@ -8,6 +8,8 @@ app_path="$PWD/dist/Sonoskope.app"
 mkdir -p "$app_path/Contents/MacOS" "$app_path/Contents/Resources"
 cp "$bin_path/Sonoskope" "$app_path/Contents/MacOS/Sonoskope"
 cp App/Info.plist "$app_path/Contents/Info.plist"
+bash scripts/build-icon.sh
+cp .build/AppIcon.icns "$app_path/Contents/Resources/AppIcon.icns"
 # SwiftPM libraries resolve Bundle.module inside the app's Resources directory.
 for bundle in "$bin_path"/*.bundle; do
   [ -d "$bundle" ] && cp -R "$bundle" "$app_path/Contents/Resources/"
