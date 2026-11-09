@@ -183,7 +183,7 @@ struct StatusView: View {
           L10n.tr("输入：按需自动监测或手动测试。应用输出：")
             + (model.outputEnabled ? L10n.tr("已开启") : L10n.tr("未开启")) + L10n.tr("。"))
         Text(L10n.tr("设备每 2 秒轮询，短于轮询间隔的断连可能漏检。"))
-        Text(L10n.tr("探测：www.apple.com:443，每次完成后间隔 5 秒；连接耗时包含 DNS，不是会议延迟。"))
+        Text(L10n.tr("仅在输入或输出电平活跃时探测：www.apple.com:443，每次完成后间隔 5 秒；不是会议延迟。"))
         Text(model.network.wifi)
         ForEach(model.hardware.devices) { device in
           Text(
@@ -349,7 +349,7 @@ struct SettingsView: View {
           _, _ in
           model.updateSettings()
         }
-        Text(L10n.tr("与 www.apple.com:443 建立 TCP 测试连接，每次完成后间隔 5 秒。不上传音频，不代表会议媒体质量。"))
+        Text(L10n.tr("仅在采集到活跃输入或输出电平时进行 TCP 探测；静音或无新数据时待命。不上传音频，不代表会议媒体质量。"))
       }
       Section(L10n.tr("提醒")) {
         Toggle(L10n.tr("明确中断或持续疑似异常时提醒"), isOn: $model.notificationsEnabled).onChange(
@@ -382,7 +382,7 @@ struct SettingsView: View {
       Section {
         Text(
           L10n.tr(
-            "Sonoskope \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1.5") · macOS 14.2+\n系统层诊断；不使用 Zoom／Teams 接口。"
+            "Sonoskope \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1.6") · macOS 14.2+\n系统层诊断；不使用 Zoom／Teams 接口。"
           )
         ).font(.caption)
           .foregroundStyle(.secondary)

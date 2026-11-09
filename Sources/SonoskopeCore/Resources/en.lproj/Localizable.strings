@@ -27,7 +27,7 @@
 "。" = ".";
 "。不代表端到端音质已验证。" = ". This does not verify end-to-end audio quality.";
 "上次运行已结束；当前状态未知" = "The previous session ended; current status is unknown";
-"与 www.apple.com:443 建立 TCP 测试连接，每次完成后间隔 5 秒。不上传音频，不代表会议媒体质量。" = "Opens a test TCP connection to www.apple.com:443, 5 seconds after each result. No audio is uploaded. This does not measure meeting media quality.";
+"仅在采集到活跃输入或输出电平时进行 TCP 探测；静音或无新数据时待命。不上传音频，不代表会议媒体质量。" = "TCP probes run only with measured input or output activity; standby during silence or missing data. No audio is uploaded; this does not measure meeting media quality.";
 "与网络探测异常同时发生，可能相关；尚不能确认因果。" = "This coincided with a network probe anomaly. They may be related, but causation is unconfirmed.";
 "主动探测已关闭" = "Active probes disabled";
 "主动网络探测已关闭" = "Active network probes are disabled";
@@ -93,7 +93,7 @@
 "所有应用输出（排除 Sonoskope）" = "All app output (excluding Sonoskope)";
 "所选音频进程已退出，请重新选择" = "The selected audio process exited. Select it again.";
 "打开设置" = "Open settings";
-"探测：www.apple.com:443，每次完成后间隔 5 秒；连接耗时包含 DNS，不是会议延迟。" = "Probe: www.apple.com:443, 5 seconds after each result. Connection time includes DNS; it is not meeting latency.";
+"仅在输入或输出电平活跃时探测：www.apple.com:443，每次完成后间隔 5 秒；不是会议延迟。" = "Probes www.apple.com:443 only while input or output levels are active, 5 seconds after each result; not meeting latency.";
 "提醒" = "Notifications";
 "收到静音数据 · 不代表故障或采集授权有效" = "Silent data received · Does not verify a fault or capture permission";
 "断连后恢复" = "Reconnected";
@@ -301,3 +301,4 @@
 "麦克风监测需要授权" = "Microphone monitoring needs permission";
 
 "若未弹出授权提示，请到系统设置 → 隐私与安全性 → 麦克风中允许 Sonoskope。" = "If no prompt appears, allow Sonoskope in System Settings → Privacy & Security → Microphone.";
+"等待音频活动 · 网络探测待命" = "Waiting for audio activity · Network probes on standby";

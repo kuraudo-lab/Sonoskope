@@ -12,7 +12,15 @@ struct NetworkReading {
   var lastUpdated: Date?
 }
 
-@MainActor final class NetworkMonitor {
+@MainActor protocol NetworkProbing: AnyObject {
+  var onPath: ((String) -> Void)? { get set }
+  func start()
+  func probe() async -> Double?
+  func cancelProbe()
+  func stop()
+}
+
+@MainActor final class NetworkMonitor: NetworkProbing {
   var onPath: ((String) -> Void)?
   private var monitor: NWPathMonitor?
   private var connection: NWConnection?
@@ -39,7 +47,9 @@ struct NetworkReading {
     }
     monitor.start(queue: DispatchQueue(label: "lab.kuraudo.Sonoskope.path"))
   }
-  func probe(host: String = "www.apple.com", port: UInt16 = 443) async -> Double? {
+  func probe() async -> Double? {
+    let host = "www.apple.com"
+    let port: UInt16 = 443
     finish(nil)
     let token = UUID()
     generation = token
@@ -82,9 +92,12 @@ struct NetworkReading {
     pending = nil
     continuation?.resume(returning: value)
   }
-  func stop() {
+  func cancelProbe() {
     generation = UUID()
     finish(nil)
+  }
+  func stop() {
+    cancelProbe()
     monitor?.cancel()
     monitor = nil
   }

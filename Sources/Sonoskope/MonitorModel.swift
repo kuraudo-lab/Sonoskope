@@ -162,7 +162,10 @@ import SonoskopeCore
     return demoScenario == nil ? liveEngine : demoEngine
   }
   @ObservationIgnored private let deviceMonitor = HardwareMonitor()
-  @ObservationIgnored private let networkMonitor = NetworkMonitor()
+  @ObservationIgnored private let networkMonitor: any NetworkProbing
+  private(set) var networkAudioActive = false
+  @ObservationIgnored private var nextProbeAt = Date.distantPast
+  @ObservationIgnored private var networkActivityGeneration = UUID()
   @ObservationIgnored private let outputCapture = OutputCapture()
   @ObservationIgnored private let microphone: any MicrophoneCapturing
   @ObservationIgnored private let microphoneAuthorized: @MainActor () -> Bool
@@ -185,8 +188,9 @@ import SonoskopeCore
     microphoneAuthorized: (@MainActor () -> Bool)? = nil,
     requestMicrophoneAuthorization: (@MainActor () async -> Bool)? = nil,
     readInputHardware: (@MainActor () -> HardwareSnapshot)? = nil,
-    runsCollectors: Bool = true
+    runsCollectors: Bool = true, networkMonitor: (any NetworkProbing)? = nil
   ) {
+    self.networkMonitor = networkMonitor ?? NetworkMonitor()
     self.persist = persist
     self.microphone = microphone ?? MicrophoneCapture()
     self.microphoneAuthorized =
@@ -205,7 +209,7 @@ import SonoskopeCore
     liveEngine = DiagnosticEngine(
       incidents: persist ? store.load(retentionHours: retentionHours) : [])
     loginEnabled = runsCollectors && SMAppService.mainApp.status == .enabled
-    networkMonitor.onPath = { [weak self] path in self?.network.path = path }
+    self.networkMonitor.onPath = { [weak self] path in self?.network.path = path }
     guard runsCollectors else { return }
     wakeObserver = NSWorkspace.shared.notificationCenter.addObserver(
       forName: NSWorkspace.didWakeNotification, object: nil, queue: .main
@@ -277,6 +281,7 @@ import SonoskopeCore
     networkMonitor.stop()
     captureGeneration = UUID()
     outputCapture.stop()
+    outputMeasurement = nil
     stopMicrophoneCapture()
     automaticInputPolicy.suspend()
     lastAutomaticTarget = nil
@@ -325,7 +330,33 @@ import SonoskopeCore
   func requestNotifications() {
     Task { notificationStatus = await notifications.authorize() }
   }
-  private func restartNetwork() {
+  // A valid PCM window above the analyzer's near-silence floor is activity,
+  // not evidence that the device or remote participant sounds good.
+  func updateNetworkActivity(at now: Date = Date()) {
+    let active =
+      networkEnabled && !paused && !sleeping && demoScenario == nil
+      && [(microphoneRunning, inputMeasurement), (outputEnabled, outputMeasurement)].contains {
+        enabled, sample in
+        guard enabled, let sample else { return false }
+        let age = now.timeIntervalSince(sample.date)
+        return age >= 0 && age <= 3 && sample.sampleCount > 0
+          && !sample.discontinuity && sample.rmsDB.isFinite && sample.rmsDB > -65
+      }
+    if networkAudioActive != active { networkActivityGeneration = UUID() }
+    if networkAudioActive && !active {
+      networkMonitor.cancelProbe()
+      network.samples = []
+      network.duration = nil
+      network.lastUpdated = nil
+      networkHistory.breakSeries("network")
+      probeDegraded = false
+    }
+    networkAudioActive = active
+    if !active {
+      network.probe = networkEnabled ? L10n.tr("等待音频活动 · 网络探测待命") : L10n.tr("主动探测已关闭")
+    }
+  }
+  func restartNetwork() {
     networkTask?.cancel()
     networkTask = nil
     networkMonitor.stop()
@@ -333,6 +364,7 @@ import SonoskopeCore
     network.samples = []
     networkHistory.breakSeries("network")
     probeDegraded = false
+    updateNetworkActivity()
     guard networkEnabled else {
       network.probe = L10n.tr("主动探测已关闭")
       return
@@ -340,8 +372,19 @@ import SonoskopeCore
     networkTask = Task { [weak self] in
       while !Task.isCancelled {
         guard let self else { return }
+        self.updateNetworkActivity()
+        guard self.networkAudioActive, Date() >= self.nextProbeAt else {
+          do { try await Task.sleep(for: .seconds(1)) } catch { return }
+          continue
+        }
+        let activityGeneration = self.networkActivityGeneration
         let value = await self.networkMonitor.probe()
+        self.nextProbeAt = Date().addingTimeInterval(5)
         guard !Task.isCancelled, self.demoScenario == nil, !self.paused else { return }
+        self.updateNetworkActivity()
+        guard self.networkAudioActive, self.networkActivityGeneration == activityGeneration else {
+          continue
+        }
         let sample = ProbeSample(milliseconds: value)
         self.network.samples = Array((self.network.samples + [sample]).suffix(12))
         self.networkHistory.append(
@@ -368,6 +411,7 @@ import SonoskopeCore
   func setOutputEnabled(_ enabled: Bool) {
     outputEnabled = enabled
     outputMeasurement = nil
+    updateNetworkActivity()
     lastAudioEvent[.output] = nil
     captureGeneration = UUID()
     outputCapture.stop()
@@ -386,6 +430,7 @@ import SonoskopeCore
     captureGeneration = UUID()
     let token = captureGeneration
     outputMeasurement = nil
+    updateNetworkActivity()
     outputStatus = L10n.tr("等待采集授权或音频数据")
     guard #available(macOS 14.2, *) else {
       outputStatus = L10n.tr("需要 macOS 14.2 或更新版本")
@@ -450,6 +495,7 @@ import SonoskopeCore
     hardware = snapshot
     clock = snapshot.timestamp
     reconcileAutomaticInput()
+    updateNetworkActivity(at: clock)
   }
   private func reconcileAutomaticInput() {
     let devices = hardware.devices.filter {
@@ -553,8 +599,10 @@ import SonoskopeCore
     microphoneDevice = nil
     inputMeasurement = nil
     audioHistory.breakSeries("input")
+    updateNetworkActivity()
   }
   private func handle(_ sample: AudioMeasurement, direction: Direction) {
+    updateNetworkActivity()
     audioHistory.append(
       value: sample.discontinuity ? nil : sample.rmsDB, source: direction.rawValue,
       date: sample.date, maximumGap: 2,
