@@ -168,18 +168,19 @@ enum AudioHAL {
     var events: [DiagnosticEvent] = []
     let wasActive = previous?.audioActive ?? false
     if let old = previous {
-      let watchedIDs = Set(
-        [old.defaultInput, old.defaultOutput]
-          + old.processes.filter { $0.outputActive }.flatMap(\.outputDevices)
-          + old.processes.filter { $0.inputActive }.flatMap(\.inputDevices))
+      let watchedInputIDs = Set(
+        [old.defaultInput] + old.processes.filter { $0.inputActive }.flatMap(\.inputDevices))
+      let watchedOutputIDs = Set(
+        [old.defaultOutput] + old.processes.filter { $0.outputActive }.flatMap(\.outputDevices))
+      let watchedIDs = watchedInputIDs.union(watchedOutputIDs)
       for device in old.devices
       where watchedIDs.contains(device.id)
         && !next.devices.contains(where: { $0.uid == device.uid })
       {
         missing[device.uid] = device
         let direction: Direction =
-          device.id == old.defaultInput && device.id == old.defaultOutput
-          ? .shared : device.id == old.defaultInput ? .input : .output
+          watchedInputIDs.contains(device.id) && watchedOutputIDs.contains(device.id)
+          ? .shared : watchedInputIDs.contains(device.id) ? .input : .output
         events.append(
           .init(
             kind: .deviceDisconnected, direction: direction, source: device.uid,
