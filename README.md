@@ -8,7 +8,7 @@ Sonoskope asks two questions: **is my local input healthy?** and **where might t
 
 ## Download
 
-[GitHub Releases](https://github.com/kuraudo-lab/Sonoskope/releases) provides Apple Silicon and Intel ZIPs with SHA-256 checksums. These builds are **ad-hoc signed, unnotarized developer previews**; Gatekeeper may prevent direct opening. A private repository requires an authorized GitHub account to download. Local source builds remain available below.
+[GitHub Releases](https://github.com/kuraudo-lab/Sonoskope/releases) provides Apple Silicon and Intel ZIPs with SHA-256 checksums. These builds are **ad-hoc signed, unnotarized developer previews**; Gatekeeper may prevent direct opening. Local source builds remain available below.
 
 ## Language
 
@@ -36,11 +36,19 @@ Left-click the menu-bar waveform to open status; right-click for settings and qu
 - Optional connected Bluetooth RSSI readings, with unsupported values explicitly unavailable. No guessed Bluetooth packet-loss or codec metrics.
 - Network path monitoring and optional TCP connection probes to `www.apple.com:443` every five seconds after completion. Connection time includes DNS/setup; it is **not** media RTT, jitter, or packet-loss telemetry. No audio is transmitted.
 - Opt-in Core Audio Process Tap output analysis: all app output (excluding Sonoskope), or one selected process. Private, unmuted aggregate capture; no custom driver and no audio rerouting.
-- Explicit, bounded 10-second default-microphone tests. No background microphone capture and no raw audio recordings.
+- Opt-in automatic microphone levels: capture follows input devices actively used by other apps and stops after they release the input. Sonoskope excludes its own activity, remembers the opt-in, and suspends capture during pause, sleep, and demos. The bounded 10-second manual test remains available when automatic monitoring is off. No raw recordings are saved.
+- Input curves label the apps using the microphone, including concurrent users; historical selection preserves the original labels. These are shared-device usage labels, not separate app volumes.
+- Explicit current input/default output device names. Built-in Mac microphones and speakers, USB devices and headsets use the same monitoring paths.
 - Conservative near-full-scale and short-gap heuristics with repeated-evidence gating. These are candidates, not a validated speech-quality model.
 - Native last-60-second sound-level and TCP probe charts, with missing readings left blank and failures marked separately. Levels are not quality scores.
 - Two native windows (status/settings), silent native notifications, incident evidence, recovery tracking, bounded local history and JSON export.
 - Seven isolated demo scenarios that pause live collectors and never send notifications or persist demo history.
+
+## Automatic microphone levels
+
+In Settings, enable **Automatically monitor microphone levels** and grant microphone permission. While another app uses an input device, the status window shows live dBFS and a purple input trace. With two-second polling and a two-second idle grace, capture normally stops about 2–4 seconds after the other app releases input.
+
+This follows system input IO, not speech or a meeting's mute button. A muted meeting may keep its input stream active. The observed device can differ from the system default. When several devices are active, Sonoskope keeps its current active device or chooses the active system default; otherwise it waits rather than guessing. Unknown usage stops capture. Opening the microphone may affect Bluetooth mode.
 
 ## Permissions and defaults
 
@@ -56,7 +64,7 @@ Login startup is optional via ServiceManagement. For a durable login item, insta
 - Network probes test a different connection/path. Correlation does not establish causation or separate uplink/downlink loss.
 - RSSI is optional, does not measure Bluetooth retransmissions, and is not mapped to directional audio quality.
 - The device collector polls; it can miss very brief disconnect/reconnect cycles.
-- Microphone tests can switch Bluetooth mode. Do not run them casually during an important call.
+- Microphone monitoring and tests can affect Bluetooth mode. Actual headset behavior still requires device testing.
 - A selected process that exits must be selected again. Browser tabs/helper processes may not map cleanly to a meeting.
 
 ## Data
@@ -88,6 +96,7 @@ Push an annotated semantic version tag after updating the bundle version and Eng
 
 - `Sources/SonoskopeCore`: deterministic diagnosis, PCM metrics, network summaries, scenario fixtures, localization resources.
 - `Sources/Sonoskope`: native UI, collectors, permission flows, lifecycle, notifications, persistence.
-- `Tests/SonoskopeCoreTests`: regression tests for evidence boundaries, failure handling, language selection, and history migration.
+- `Tests/SonoskopeCoreTests`: regression tests for evidence boundaries, automatic input policy, localization, and history migration.
+- `Tests/SonoskopeTests`: application lifecycle tests with an injected microphone; they do not open real input devices.
 
 No external package dependencies. No meeting-platform integrations or private APIs.

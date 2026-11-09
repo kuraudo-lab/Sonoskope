@@ -6,6 +6,7 @@ public struct TelemetryPoint: Identifiable, Sendable {
   public let value: Double?
   public let source: String
   public let segment: Int
+  public let context: String?
   public var series: String { source + ":" + String(segment) }
 }
 
@@ -13,18 +14,26 @@ public struct TelemetryPoint: Identifiable, Sendable {
 public struct TelemetryHistory: Sendable {
   public private(set) var points: [TelemetryPoint] = []
   private var segments: [String: Int] = [:]
+  private var lastContexts: [String: String] = [:]
   private var lastDates: [String: Date] = [:]
   public init() {}
-  public mutating func append(value: Double?, source: String, date: Date, maximumGap: TimeInterval)
-  {
-    if let last = lastDates[source], date.timeIntervalSince(last) > maximumGap {
+  public mutating func append(
+    value: Double?, source: String, date: Date, maximumGap: TimeInterval,
+    context: String? = nil
+  ) {
+    if let last = lastDates[source],
+      date.timeIntervalSince(last) > maximumGap || lastContexts[source] != context
+    {
       breakSeries(source)
     }
     let valid = value.flatMap { $0.isFinite ? $0 : nil }
     if valid == nil { breakSeries(source) }
     points.append(
-      .init(date: date, value: valid, source: source, segment: segments[source, default: 0]))
+      .init(
+        date: date, value: valid, source: source, segment: segments[source, default: 0],
+        context: context))
     lastDates[source] = date
+    lastContexts[source] = context
     points = Array(points.filter { date.timeIntervalSince($0.date) <= 300 }.suffix(3000))
   }
   public mutating func breakSeries(_ source: String) {

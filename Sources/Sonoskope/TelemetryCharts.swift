@@ -25,7 +25,7 @@ struct TelemetryCharts: View {
         }
         HStack(spacing: 12) {
           Label(L10n.tr("应用输出"), systemImage: "minus").foregroundStyle(.blue)
-          Label(L10n.tr("麦克风测试"), systemImage: "minus").foregroundStyle(.purple)
+          Label(L10n.tr("麦克风输入"), systemImage: "minus").foregroundStyle(.purple)
         }.font(.caption)
         if audio.contains(where: { $0.value != nil }) {
           Chart {
@@ -38,6 +38,30 @@ struct TelemetryCharts: View {
                 .foregroundStyle(point.source == "input" ? Color.purple : Color.blue)
                 .lineStyle(StrokeStyle(lineWidth: 1.5))
                 .interpolationMethod(.linear)
+              }
+            }
+            ForEach(inputChanges) { point in
+              RuleMark(x: .value(L10n.tr("应用变化"), point.date))
+                .foregroundStyle(.purple.opacity(0.25))
+                .lineStyle(StrokeStyle(lineWidth: 1, dash: [2, 3]))
+            }
+            if let point = focusedInput, let value = point.value, let context = point.context {
+              PointMark(
+                x: .value(L10n.tr("时间"), point.date),
+                y: .value(L10n.tr("电平"), max(-80, value))
+              )
+              .foregroundStyle(.purple).symbolSize(24)
+              .annotation(
+                position: .top, alignment: .trailing, spacing: 5,
+                overflowResolution: .init(x: .fit(to: .chart), y: .fit(to: .chart))
+              ) {
+                VStack(alignment: .leading, spacing: 2) {
+                  Text(point.date.uiFormatted(date: .omitted, time: .standard))
+                    .foregroundStyle(.secondary)
+                  Text(context).fontWeight(.medium).lineLimit(2)
+                }.font(.caption2).frame(maxWidth: 210, alignment: .leading)
+                  .padding(6).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6))
+                  .help(context)
               }
             }
             if let incidentAt, domain.contains(incidentAt) {
@@ -66,11 +90,16 @@ struct TelemetryCharts: View {
             }
           }
           .chartXSelection(value: $selectedAudioDate)
-          .frame(height: 110)
-          .accessibilityLabel(L10n.tr("最近一分钟本地音频电平，蓝色为应用输出，紫色为主动麦克风测试。缺失数据不连线。"))
+          .frame(height: 140)
+          .accessibilityLabel(L10n.tr("最近一分钟本地音频电平，蓝色为应用输出，紫色为麦克风输入。缺失数据不连线。"))
           Text(audioDetail).font(.caption).foregroundStyle(.secondary).monospacedDigit()
+          if audio.contains(where: { $0.context != nil }) {
+            Text(L10n.tr("标签表示使用此麦克风的应用；不是各应用的独立音量。点击曲线可查看过去的应用。"))
+              .font(.caption).foregroundStyle(.secondary).fixedSize(
+                horizontal: false, vertical: true)
+          }
         } else {
-          empty(audioEnabled ? L10n.tr("等待可用音频数据") : L10n.tr("开启输出分析或主动麦克风测试后显示"))
+          empty(audioEnabled ? L10n.tr("等待可用音频数据") : L10n.tr("开启输出分析、自动麦克风监测或手动测试后显示"))
         }
       }
       VStack(alignment: .leading, spacing: 6) {
@@ -133,6 +162,22 @@ struct TelemetryCharts: View {
       .frame(maxWidth: .infinity, minHeight: 58, alignment: .center)
       .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 6))
   }
+  private var focusedInput: TelemetryPoint? {
+    let inputs = audio.filter { $0.source == "input" && $0.value != nil }
+    guard let selectedAudioDate else { return inputs.last }
+    guard let point = nearest(inputs, to: selectedAudioDate),
+      abs(point.date.timeIntervalSince(selectedAudioDate)) <= 2
+    else { return nil }
+    return point
+  }
+  private var inputChanges: [TelemetryPoint] {
+    var previous: String?
+    return audio.filter { point in
+      guard point.source == "input" else { return false }
+      defer { previous = point.context }
+      return point.context != nil && previous != nil && previous != point.context
+    }
+  }
   private var audioDetail: String {
     guard let selectedAudioDate, let point = nearest(audio, to: selectedAudioDate),
       let value = point.value
@@ -140,8 +185,9 @@ struct TelemetryCharts: View {
       return L10n.tr("电平不等于音质；静音不是中断，缺失数据留空。")
     }
     return point.date.uiFormatted(date: .omitted, time: .standard) + " · "
-      + (point.source == "input" ? L10n.tr("麦克风测试 ") : L10n.tr("应用输出 "))
+      + (point.source == "input" ? L10n.tr("麦克风输入 ") : L10n.tr("应用输出 "))
       + String(format: "%.1f dBFS", value)
+      + (point.context.map { " · " + $0 } ?? "")
   }
   private var networkDetail: String {
     if let selectedNetworkDate, let point = nearest(network, to: selectedNetworkDate) {

@@ -182,56 +182,115 @@ final class CallbackAnalyzer {
   }
 }
 
-@MainActor final class MicrophoneTest {
+enum MicrophoneCaptureEnd {
+  case completed, permissionDenied, configurationChanged
+  case failed(String)
+}
+@MainActor protocol MicrophoneCapturing: AnyObject {
+  func start(
+    deviceID: AudioDeviceID, duration: TimeInterval?, requestPermission: Bool,
+    onMeasurement: @escaping @MainActor (AudioMeasurement) -> Void,
+    onEnd: @escaping @MainActor (MicrophoneCaptureEnd) -> Void) async
+  func stop()
+}
+@MainActor final class MicrophoneCapture: MicrophoneCapturing {
+  typealias End = MicrophoneCaptureEnd
   private var engine: AVAudioEngine?
   private var sink: CallbackAnalyzer?
   private var timeout: Task<Void, Never>?
+  private var configurationObserver: NSObjectProtocol?
   private var generation = UUID()
+
   func start(
+    deviceID: AudioDeviceID, duration: TimeInterval?, requestPermission: Bool,
     onMeasurement: @escaping @MainActor (AudioMeasurement) -> Void,
-    onEnd: @escaping @MainActor (String) -> Void
+    onEnd: @escaping @MainActor (End) -> Void
   ) async {
     stop()
     let token = UUID()
     generation = token
-    let permitted = await AVCaptureDevice.requestAccess(for: .audio)
+    let permitted: Bool
+    if requestPermission {
+      permitted = await AVCaptureDevice.requestAccess(for: .audio)
+    } else {
+      permitted = AVCaptureDevice.authorizationStatus(for: .audio) == .authorized
+    }
     guard generation == token else { return }
     guard permitted else {
-      onEnd(L10n.tr("麦克风权限未授权；没有进行测试。"))
+      onEnd(.permissionDenied)
+      return
+    }
+    guard deviceID != 0,
+      AudioHAL.scalar(deviceID, kAudioDevicePropertyDeviceIsAlive, default: UInt32(0)) != 0
+    else {
+      onEnd(.failed(L10n.tr("输入设备不可用；已停止采集。")))
       return
     }
     let engine = AVAudioEngine()
     let input = engine.inputNode
+    guard let unit = input.audioUnit else {
+      onEnd(.failed(L10n.tr("输入设备不可用；已停止采集。")))
+      return
+    }
+    // Bind only this engine to the observed device; never change the system default.
+    var selected = deviceID
+    let selection = AudioUnitSetProperty(
+      unit, kAudioOutputUnitProperty_CurrentDevice,
+      kAudioUnitScope_Global, 0, &selected, UInt32(MemoryLayout<AudioDeviceID>.size))
+    var actual: AudioDeviceID = 0
+    var size = UInt32(MemoryLayout<AudioDeviceID>.size)
+    let verification = AudioUnitGetProperty(
+      unit, kAudioOutputUnitProperty_CurrentDevice,
+      kAudioUnitScope_Global, 0, &actual, &size)
+    guard selection == noErr, verification == noErr, actual == deviceID else {
+      onEnd(.failed(L10n.tr("无法绑定目标输入设备；未采集其他麦克风。")))
+      return
+    }
     let format = input.outputFormat(forBus: 0)
     guard format.channelCount > 0, format.sampleRate > 0, format.commonFormat == .pcmFormatFloat32
     else {
-      onEnd(L10n.tr("默认输入设备不可用或格式不受支持。"))
+      onEnd(.failed(L10n.tr("输入设备不可用或格式不受支持。")))
       return
     }
     let sink = CallbackAnalyzer { measurement in Task { @MainActor in onMeasurement(measurement) } }
     self.sink = sink
-    self.engine = engine
     input.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, time in
       sink.accept(
         buffer.audioBufferList, format: format.streamDescription.pointee,
         sampleTime: time.isSampleTimeValid ? Double(time.sampleTime) : nil)
     }
+    self.engine = engine
     do { try engine.start() } catch {
       stop()
-      onEnd(L10n.tr("麦克风测试启动失败：") + error.localizedDescription)
+      onEnd(.failed(L10n.tr("麦克风采集启动失败：") + error.localizedDescription))
       return
     }
-    timeout = Task { [weak self] in
-      do { try await Task.sleep(for: .seconds(10)) } catch { return }
-      guard self?.generation == token else { return }
-      self?.stop()
-      onEnd(L10n.tr("10 秒本地测试已结束。结果不代表远端听感。"))
+    configurationObserver = NotificationCenter.default.addObserver(
+      forName: .AVAudioEngineConfigurationChange, object: engine, queue: .main
+    ) { [weak self] _ in
+      Task { @MainActor in
+        guard let self, self.generation == token else { return }
+        self.stop()
+        onEnd(.configurationChanged)
+      }
+    }
+    if let duration {
+      timeout = Task { [weak self] in
+        do { try await Task.sleep(for: .seconds(duration)) } catch { return }
+        guard self?.generation == token else { return }
+        self?.stop()
+        onEnd(.completed)
+      }
     }
   }
   func stop() {
     generation = UUID()
     timeout?.cancel()
     timeout = nil
+    if let configurationObserver {
+      NotificationCenter.default.removeObserver(configurationObserver)
+    }
+    configurationObserver = nil
     if let engine {
       engine.inputNode.removeTap(onBus: 0)
       engine.stop()

@@ -19,7 +19,7 @@ for preference, expected in [('en-US','en'),('zh-Hans-CN','zh-Hans'),('zh-Hant-T
     payload=json.loads(result.stdout)
     assert payload['language']==expected,payload
     assert payload['soundLevel']==('Sound level' if expected=='en' else '声音电平'),payload
-    assert payload['microphonePermission'].startswith('Analyze local' if expected=='en' else '仅在你主动测试'),payload
+    assert payload['microphonePermission'].startswith('Analyze local' if expected=='en' else '仅在你开启自动监测'),payload
     # Build-tree fallback would conceal missing resources in a shipped app.
     assert app in Path(payload['resourceBundle']).resolve().parents,payload
     print(preference+' -> '+expected+': relocated app resources and permission descriptions OK')

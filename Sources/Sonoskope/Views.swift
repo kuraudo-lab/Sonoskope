@@ -32,17 +32,30 @@ struct StatusView: View {
               Button(L10n.tr("返回实时监测")) { model.exitDemo() }
             }.padding(10).background(.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
           }
+          if model.demoScenario == nil {
+            VStack(alignment: .leading, spacing: 10) {
+              Text(L10n.tr("音频设备")).font(.callout.weight(.medium))
+              AudioDeviceRow(
+                role: model.inputDeviceRole, device: model.currentInputDevice,
+                symbol: "mic", unavailable: L10n.tr("无可用输入"))
+              AudioDeviceRow(
+                role: L10n.tr("系统默认输出"), device: model.hardware.output,
+                symbol: "speaker.wave.2", unavailable: L10n.tr("无可用输出"))
+              Text(L10n.tr("应用可能使用不同的输出设备；输出电平是所选应用的数字音频。"))
+                .font(.caption).foregroundStyle(.secondary)
+            }.padding(12).background(
+              .quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 8))
+          }
           VStack(spacing: 14) {
             DirectionRow(
               title: L10n.tr("我的声音"), icon: "mic", status: model.inputReading,
               detail: model.demoScenario == nil
-                ? L10n.tr("系统默认：") + (model.hardware.input?.name ?? L10n.tr("无可用输入"))
-                : L10n.tr("演示不采集麦克风"))
+                ? L10n.tr("本机输入电平；不是远端收到的音量。") : L10n.tr("演示不采集麦克风"))
             Divider()
             DirectionRow(
               title: L10n.tr("我听到的声音"), icon: "headphones", status: model.outputReading,
               detail: model.demoScenario == nil
-                ? L10n.tr("系统默认：") + (model.hardware.output?.name ?? L10n.tr("无可用输出"))
+                ? L10n.tr("本机数字输出；不是扬声器实际发声。")
                 : L10n.tr("演示不采集应用输出"))
           }
           Divider()
@@ -65,6 +78,7 @@ struct StatusView: View {
             audio: model.audioChartPoints, network: model.networkChartPoints,
             endingAt: model.chartEnd, incidentAt: model.selectedIncident?.started,
             audioEnabled: model.outputEnabled || model.microphoneRunning
+              || model.automaticInputEnabled
               || model.demoScenario != nil,
             networkEnabled: model.networkEnabled || model.demoScenario != nil)
           if model.incidents.count > 1 {
@@ -99,11 +113,16 @@ struct StatusView: View {
             Button(L10n.tr("我听不清别人")) { model.mark(.output) }
           }
           Spacer()
-          if model.microphoneRunning {
+          if model.automaticInputEnabled {
+            Button(L10n.tr("关闭自动监测")) { model.setAutomaticInputEnabled(false) }
+          } else if model.microphoneRunning {
             Button(L10n.tr("停止麦克风测试")) { model.stopMicrophone() }
           } else {
-            Button(L10n.tr("测试我的声音…")) { confirmMicrophone = true }.disabled(
-              model.paused || model.demoScenario != nil)
+            Menu(L10n.tr("麦克风…")) {
+              Button(L10n.tr("自动监测设置…"), action: openSettings)
+              Button(L10n.tr("10 秒测试…")) { confirmMicrophone = true }
+                .disabled(model.paused || model.demoScenario != nil)
+            }
           }
         }
         HStack {
@@ -151,8 +170,8 @@ struct StatusView: View {
     } else {
       VStack(alignment: .leading, spacing: 8) {
         Text(
-          L10n.tr("输入：仅主动测试。应用输出：") + (model.outputEnabled ? L10n.tr("已开启") : L10n.tr("未开启"))
-            + L10n.tr("。"))
+          L10n.tr("输入：按需自动监测或手动测试。应用输出：")
+            + (model.outputEnabled ? L10n.tr("已开启") : L10n.tr("未开启")) + L10n.tr("。"))
         Text(L10n.tr("设备每 2 秒轮询，短于轮询间隔的断连可能漏检。"))
         Text(L10n.tr("探测：www.apple.com:443，每次完成后间隔 5 秒；连接耗时包含 DNS，不是会议延迟。"))
         Text(model.network.wifi)
@@ -189,6 +208,23 @@ struct StatusView: View {
   }
 }
 
+private struct AudioDeviceRow: View {
+  let role: String
+  let device: AudioDeviceInfo?
+  let symbol: String
+  let unavailable: String
+  var body: some View {
+    HStack(alignment: .top, spacing: 10) {
+      Image(systemName: symbol).frame(width: 22).foregroundStyle(.secondary)
+      VStack(alignment: .leading, spacing: 2) {
+        Text(role).font(.caption).foregroundStyle(.secondary)
+        Text(device?.name ?? unavailable).font(.callout.weight(.medium)).textSelection(.enabled)
+      }
+      Spacer(minLength: 0)
+      if let device { Text(device.transport).font(.caption).foregroundStyle(.secondary) }
+    }
+  }
+}
 private struct DirectionRow: View {
   let title: String
   let icon: String
@@ -266,6 +302,20 @@ struct SettingsView: View {
           L10n.tr("登录后启动"), isOn: Binding(get: { model.loginEnabled }, set: { model.setLogin($0) }))
         Text(L10n.tr("在菜单栏运行。点击图标或问题提醒可打开音频状态。"))
       }
+      Section(L10n.tr("麦克风")) {
+        Toggle(
+          L10n.tr("自动监测麦克风电平"),
+          isOn: Binding(
+            get: { model.automaticInputEnabled }, set: { model.setAutomaticInputEnabled($0) })
+        )
+        .disabled(model.demoScenario != nil && !model.automaticInputEnabled)
+        Text(L10n.tr("仅在其他应用使用输入设备时采集，停止使用后自动关闭。开启后记住此设置；暂停、睡眠和演示期间停止采集。"))
+        Text(L10n.tr("会实际打开麦克风，可能改变蓝牙耳机模式。不保存或上传录音；会议静音按钮不一定关闭输入流。"))
+        Text(model.inputReading).font(.caption).foregroundStyle(.secondary)
+        if model.automaticInputNeedsPermission {
+          Button(L10n.tr("重新检查麦克风权限")) { model.setAutomaticInputEnabled(true) }
+        }
+      }
       Section(L10n.tr("采集范围")) {
         Toggle(
           L10n.tr("分析应用输出音频"),
@@ -321,7 +371,7 @@ struct SettingsView: View {
       Section {
         Text(
           L10n.tr(
-            "Sonoskope \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1.2") · macOS 14.2+\n系统层诊断；不使用 Zoom／Teams 接口。"
+            "Sonoskope \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1.3") · macOS 14.2+\n系统层诊断；不使用 Zoom／Teams 接口。"
           )
         ).font(.caption)
           .foregroundStyle(.secondary)

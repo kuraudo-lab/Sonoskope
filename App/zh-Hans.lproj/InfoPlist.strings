@@ -1,3 +1,3 @@
-"NSMicrophoneUsageDescription" = "仅在你主动测试时分析本地麦克风音频；不保存或上传录音。";
+"NSMicrophoneUsageDescription" = "仅在你开启自动监测且其他应用使用输入设备，或你主动测试时分析麦克风电平；不保存或上传录音。";
 "NSAudioCaptureUsageDescription" = "分析所选应用的输出音频以发现可疑中断；只保留指标，不保存或上传录音。";
 "NSBluetoothAlwaysUsageDescription" = "读取已连接耳机的连接状态及可用信号强度，帮助定位音频中断。";

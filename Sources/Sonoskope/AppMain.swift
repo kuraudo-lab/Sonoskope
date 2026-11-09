@@ -64,6 +64,11 @@ import SwiftUI
           "audioProcessCount": model.hardware.processes.count,
           "networkPath": model.network.path, "probe": model.network.probe,
           "microphoneRunning": model.microphoneRunning,
+          "automaticInputEnabled": model.automaticInputEnabled,
+          "inputUsageAvailable": model.hardware.inputProcesses != nil,
+          "activeInputProcessCount": model.hardware.inputProcesses?.filter {
+            $0.pid != getpid() && $0.running == true
+          }.count ?? 0,
           "outputCaptureEnabled": model.outputEnabled,
           "liveIncidentCount": model.incidents.count,
         ]

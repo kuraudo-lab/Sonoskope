@@ -38,9 +38,23 @@ struct HardwareSnapshot {
   var defaultOutput: AudioObjectID = 0
   var bluetooth: [BluetoothInfo] = []
   var timestamp = Date()
+  var inputProcesses: [InputProcessActivity]? = nil
   var input: AudioDeviceInfo? { devices.first { $0.id == defaultInput } }
   var output: AudioDeviceInfo? { devices.first { $0.id == defaultOutput } }
   var audioActive: Bool { processes.contains { $0.inputActive || $0.outputActive } }
+  func inputUsers(of device: AudioObjectID, observerPID: Int32) -> [String] {
+    let users = (inputProcesses ?? []).filter {
+      $0.pid != observerPID && $0.bundleID != "lab.kuraudo.Sonoskope"
+        && $0.running == true && $0.devices?.contains(device) == true
+    }.map { process in
+      if let name = processes.first(where: { $0.pid == process.pid })?.name, !name.isEmpty {
+        return name
+      }
+      return process.bundleID.isEmpty ? L10n.tr("进程 \(process.pid)") : process.bundleID
+    }
+    return Array(Set(users)).sorted()
+  }
+
 }
 
 enum AudioHAL {
@@ -66,17 +80,26 @@ enum AudioHAL {
   static func ids(
     _ object: AudioObjectID, _ selector: AudioObjectPropertySelector,
     scope: AudioObjectPropertyScope = kAudioObjectPropertyScopeGlobal
-  ) -> [AudioObjectID] {
-    var property = address(selector, scope: scope)
+  ) -> [AudioObjectID] { optionalIDs(object, selector, scope: scope) ?? [] }
+
+  static func optionalIDs(
+    _ object: AudioObjectID, _ selector: AudioObjectPropertySelector,
+    scope: AudioObjectPropertyScope = kAudioObjectPropertyScopeGlobal
+  ) -> [AudioObjectID]? {
+    var property = address(selector)
+    property.mScope = scope
     var size: UInt32 = 0
-    guard AudioObjectGetPropertyDataSize(object, &property, 0, nil, &size) == noErr, size > 0 else {
-      return []
+    guard AudioObjectGetPropertyDataSize(object, &property, 0, nil, &size) == noErr else {
+      return nil
     }
+    if size == 0 { return [] }
+    guard Int(size) % MemoryLayout<AudioObjectID>.size == 0 else { return nil }
     var values = [AudioObjectID](repeating: 0, count: Int(size) / MemoryLayout<AudioObjectID>.size)
     let status = values.withUnsafeMutableBytes {
       AudioObjectGetPropertyData(object, &property, 0, nil, &size, $0.baseAddress!)
     }
-    return status == noErr ? values : []
+    guard status == noErr else { return nil }
+    return Array(values.prefix(Int(size) / MemoryLayout<AudioObjectID>.size))
   }
   static func string(_ object: AudioObjectID, _ selector: AudioObjectPropertySelector) -> String {
     var property = address(selector)
@@ -135,24 +158,40 @@ enum AudioHAL {
         bufferFrames: scalar(id, kAudioDevicePropertyBufferFrameSize, default: UInt32(0)),
         running: scalar(id, kAudioDevicePropertyDeviceIsRunningSomewhere, default: UInt32(0)) != 0)
     }
-    if #available(macOS 14.2, *) {
-      result.processes = ids(system, kAudioHardwarePropertyProcessObjectList).compactMap { id in
+    if #available(macOS 14.2, *),
+      let processIDs = optionalIDs(system, kAudioHardwarePropertyProcessObjectList)
+    {
+      var usage: [InputProcessActivity] = []
+      var complete = true
+      result.processes = processIDs.compactMap { id in
         let pid = scalar(id, kAudioProcessPropertyPID, default: pid_t(0))
-        guard pid > 0, pid != getpid() else { return nil }
+        guard pid > 0 else {
+          complete = false
+          return nil
+        }
         let bundle = string(id, kAudioProcessPropertyBundleID)
+        let runningInput = scalar(id, kAudioProcessPropertyIsRunningInput, default: UInt32.max)
+        let inputDevices = optionalIDs(
+          id, kAudioProcessPropertyDevices, scope: kAudioObjectPropertyScopeInput)
+        usage.append(
+          .init(
+            pid: pid, bundleID: bundle,
+            running: runningInput <= 1 ? runningInput == 1 : nil, devices: inputDevices))
+        guard pid != getpid(), bundle != "lab.kuraudo.Sonoskope" else { return nil }
         let name =
           NSRunningApplication(processIdentifier: pid)?.localizedName ?? bundle.split(
             separator: "."
           ).last.map(String.init) ?? L10n.tr("进程 \(pid)")
         return .init(
           id: id, pid: pid, bundleID: bundle, name: name,
-          inputActive: scalar(id, kAudioProcessPropertyIsRunningInput, default: UInt32(0)) != 0,
+          inputActive: runningInput == 1,
           outputActive: scalar(id, kAudioProcessPropertyIsRunningOutput, default: UInt32(0)) != 0,
           outputDevices: ids(
             id, kAudioProcessPropertyDevices, scope: kAudioObjectPropertyScopeOutput),
-          inputDevices: ids(id, kAudioProcessPropertyDevices, scope: kAudioObjectPropertyScopeInput)
+          inputDevices: inputDevices ?? []
         )
       }.sorted { $0.name < $1.name }
+      result.inputProcesses = complete ? usage : nil
     }
     if includeBluetooth, let devices = IOBluetoothDevice.pairedDevices() as? [IOBluetoothDevice] {
       result.bluetooth = devices.filter { $0.isConnected() }.map {

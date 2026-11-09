@@ -239,3 +239,61 @@
 "默认输入设备不可用或格式不受支持。" = "The default input device is unavailable or its format is unsupported.";
 "；" = "; ";
 "；输出关联：" = "; output devices: ";
+
+// Automatic microphone monitoring
+"输入设备不可用；已停止采集。" = "Input device unavailable; capture stopped.";
+"无法绑定目标输入设备；未采集其他麦克风。" = "Could not bind the target input device. No other microphone was captured.";
+"输入设备不可用或格式不受支持。" = "The input device is unavailable or its format is unsupported.";
+"麦克风采集启动失败：" = "Could not start microphone capture: ";
+"关闭自动监测" = "Disable auto monitoring";
+"麦克风…" = "Microphone…";
+"自动监测设置…" = "Automatic monitoring settings…";
+"10 秒测试…" = "10-second test…";
+"输入：按需自动监测或手动测试。应用输出：" = "Input: automatic monitoring or manual tests. App output: ";
+"麦克风" = "Microphone";
+"自动监测麦克风电平" = "Automatically monitor microphone levels";
+"仅在其他应用使用输入设备时采集，停止使用后自动关闭。开启后记住此设置；暂停、睡眠和演示期间停止采集。" = "Capture only while other apps use an input device, then stop automatically. This setting is remembered. Capture stops during pause, sleep, and demos.";
+"会实际打开麦克风，可能改变蓝牙耳机模式。不保存或上传录音；会议静音按钮不一定关闭输入流。" = "This opens the microphone and may change the Bluetooth headset mode. No recordings are saved or uploaded. Muting a meeting may leave its input stream active.";
+"重新检查麦克风权限" = "Check microphone permission again";
+"麦克风输入" = "Microphone input";
+"最近一分钟本地音频电平，蓝色为应用输出，紫色为麦克风输入。缺失数据不连线。" = "Local audio levels over the last minute. Blue is app output; purple is microphone input. Missing readings break the line.";
+"开启输出分析、自动麦克风监测或手动测试后显示" = "Enable output analysis, automatic microphone monitoring, or a manual test to see data";
+"麦克风输入 " = "Microphone input ";
+"麦克风未采集 · 可开启自动监测或手动测试" = "Microphone inactive · Enable auto monitoring or run a test";
+"等待麦克风授权或音频数据" = "Waiting for microphone permission or audio data";
+"自动麦克风监测已暂停" = "Automatic microphone monitoring paused";
+"需要麦克风权限；请在系统设置中允许后重试。" = "Microphone permission is required. Allow it in System Settings, then retry.";
+"无法确认输入设备使用状态；未采集" = "Input usage is unknown; not capturing";
+"多个输入设备活动；无法明确选择，未采集" = "Multiple active inputs; no clear selection, not capturing";
+"其他应用已停止使用麦克风，正在结束采集…" = "Other apps stopped using the microphone; ending capture…";
+"自动待命 · 等待其他应用使用麦克风" = "Standing by · Waiting for another app to use the microphone";
+" · 稍后自动重试" = " · Will retry shortly";
+"麦克风暂无新数据" = "No new microphone data";
+"自动监测 · %.0f dBFS" = "Auto monitoring · %.0f dBFS";
+"采集设备：%@" = "Capturing: %@";
+"自动跟随其他应用使用的输入设备；静音按钮状态可能不同。" = "Follows input devices used by other apps; meeting mute status may differ.";
+"麦克风暂无新数据；已停止采集，稍后重试。" = "No new microphone data. Capture stopped and will retry.";
+"输入设备配置变化；已停止采集。" = "Input configuration changed; capture stopped.";
+"麦克风采集已停止" = "Microphone capture stopped";
+
+"系统默认输入" = "Default input";
+
+"正在采集的输入" = "Input being monitored";
+
+"未观察到其他应用 · 结束缓冲" = "No other app observed · finishing capture";
+
+"Sonoskope · 手动测试" = "Sonoskope · manual test";
+
+"音频设备" = "Audio devices";
+
+"系统默认输出" = "Default output";
+
+"应用可能使用不同的输出设备；输出电平是所选应用的数字音频。" = "Apps may use a different output device; output levels measure the selected app audio.";
+
+"本机输入电平；不是远端收到的音量。" = "Local input level, not the level received by other participants.";
+
+"本机数字输出；不是扬声器实际发声。" = "Local digital output, not the physical sound from speakers.";
+
+"应用变化" = "App change";
+
+"标签表示使用此麦克风的应用；不是各应用的独立音量。点击曲线可查看过去的应用。" = "Labels show apps using this microphone, not separate app volumes. Select the chart to inspect earlier apps.";

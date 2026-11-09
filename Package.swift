@@ -13,5 +13,6 @@ let package = Package(
     .target(name: "SonoskopeCore", resources: [.process("Resources")]),
     .executableTarget(name: "Sonoskope", dependencies: ["SonoskopeCore"]),
     .testTarget(name: "SonoskopeCoreTests", dependencies: ["SonoskopeCore"]),
+    .testTarget(name: "SonoskopeTests", dependencies: ["Sonoskope", "SonoskopeCore"]),
   ]
 )

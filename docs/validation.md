@@ -37,3 +37,13 @@ Download packages are developer previews, not a claim that these physical accept
 Post-download checks caught a startup crash in the cloud-built v0.1.1 app: that SwiftPM accessor searched the app root and CI build directory instead of `Contents/Resources`. v0.1.1 was withdrawn to draft. Its passing local checks were not treated as proof of the downloaded app working.
 
 The corrected lookup explicitly uses the installed resource bundle. Local regression tests still pass (36 tests). New packaging/CI checks relocate the signed app, launch it with four language preferences, verify translated text and native permission descriptions, and require the resource URL to remain inside the relocated app. Release uploads are gated on these checks for each architecture.
+
+## v0.1.3 automatic input validation
+
+- 63 automated tests passed: 47 core tests and 16 application lifecycle tests. The latter use an injected microphone, authorization provider and hardware snapshots and never start real audio capture.
+- Covered observer exclusion, idle grace, non-default/concurrent inputs, unknown data, device/format changes, stale callbacks, permission races/revocation, retry backoff, pause, sleep/wake, demos and shutdown.
+- English/Chinese automatic standby, active-input and settings views rendered using an injected microphone fixture and were visually inspected. These renderings are simulated data.
+- Local release package built, signed and passed four relocated-app language/permission-description checks.
+- The user initially reported no curve after authorization, then confirmed continuous input curves using Voice Memos. A passive Core Audio probe observed Voice Memos, Sound Settings and Sonoskope using the same AirPods input. No cause for the initial transient report was established.
+- Physical automatic-stop timing, built-in microphone capture, Teams-specific behavior, non-default input and Bluetooth mode changes remain unverified; built-in device coverage is currently automated/fixture based.
+- Application attribution is stored with each input metric, preserves historical labels, splits segments on changes, excludes Sonoskope and unrelated input devices, and falls back to process identifiers when necessary. Separate-input diagnostic sources prevent gaps from different microphones combining into one incident.

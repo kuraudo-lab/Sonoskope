@@ -29,6 +29,20 @@ final class TelemetryHistoryTests: XCTestCase {
     XCTAssertEqual(recent.count, 1)
     XCTAssertNil(recent[0].value)
   }
+  func testApplicationChangesPreserveHistoricalLabelsAndSplitTheLine() {
+    var history = TelemetryHistory()
+    history.append(value: -20, source: "input", date: start, maximumGap: 2, context: "Voice Memos")
+    history.append(
+      value: -22, source: "input", date: start.addingTimeInterval(0.5), maximumGap: 2,
+      context: "Voice Memos")
+    history.append(
+      value: -23, source: "input", date: start.addingTimeInterval(1), maximumGap: 2,
+      context: "Teams")
+    XCTAssertEqual(history.points[0].context, "Voice Memos")
+    XCTAssertEqual(history.points[0].series, history.points[1].series)
+    XCTAssertNotEqual(history.points[1].series, history.points[2].series)
+    XCTAssertEqual(history.points[2].context, "Teams")
+  }
   func testIndependentAudioSourcesKeepIndependentSegments() {
     var history = TelemetryHistory()
     history.append(value: -20, source: "input", date: start, maximumGap: 2)

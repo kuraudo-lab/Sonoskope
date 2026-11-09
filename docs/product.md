@@ -14,14 +14,14 @@ Locate which observable segment may be responsible when outgoing or incoming mee
 4. Do not label local PCM as what remote participants heard or what a headset physically emitted.
 5. Network probe metrics do not describe the actual conference media flow.
 6. Unsupported Bluetooth RSSI is unavailable, never a healthy reading.
-7. No raw audio storage/upload; microphone access requires an explicit bounded test.
+7. No raw audio storage/upload; microphone access requires an explicit bounded test or opt-in automatic monitoring based on external input IO.
 8. Simulations are isolated from live monitoring, history, and notifications.
 9. No alerts for silence alone, isolated network risk, idle device removals, or ordinary format changes.
 10. Notification clicks open the matching historical issue; current state and past incidents are distinct.
 
 ## v0.1 scope
 
-Core Audio device/process snapshots, optional output Process Tap, optional Bluetooth RSSI, network path and TCP setup-time probe, 10-second microphone input test, evidence-based incidents, native windows, silent notifications, local retention/export, and deterministic simulations.
+Core Audio device/process snapshots, optional output Process Tap, optional Bluetooth RSSI, network path and TCP setup-time probe, automatic microphone levels plus a 10-second manual input test, evidence-based incidents, native windows, silent notifications, local retention/export, and deterministic simulations.
 
 ## Deferred capabilities
 

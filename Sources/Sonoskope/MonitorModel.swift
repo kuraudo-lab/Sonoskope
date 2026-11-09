@@ -1,3 +1,4 @@
+import AVFoundation
 import AppKit
 import Foundation
 import Observation
@@ -10,8 +11,18 @@ import SonoskopeCore
   var outputMeasurement: AudioMeasurement?
   var inputMeasurement: AudioMeasurement?
   var outputStatus = L10n.tr("未开启音频分析")
-  var inputStatus = L10n.tr("未检测 · 仅在主动测试时采集")
+  var inputStatus = L10n.tr("麦克风未采集 · 可开启自动监测或手动测试")
   var microphoneRunning = false
+  private(set) var automaticInputEnabled: Bool
+  private(set) var automaticInputAuthorizing = false
+  private var automaticInputPolicy = AutomaticInputPolicy()
+  private var microphoneIsAutomatic = false
+  private var microphoneDevice: InputDevice?
+  private var microphoneStartedAt = Date()
+  private var automaticError: String?
+  private var automaticRetryAfter: Date?
+  private var lastAutomaticTarget: InputDevice?
+  @ObservationIgnored private var automaticAuthorizationGeneration = UUID()
   var paused = false
   var outputEnabled = false
   var bluetoothEnabled: Bool
@@ -63,9 +74,15 @@ import SonoskopeCore
     if activeIncidents.contains(where: { $0.key.hasPrefix("captureUnavailable:") }) {
       return L10n.tr("音频监测不完整")
     }
-    if !outputEnabled { return L10n.tr("正在监测设备与连接") }
-    if outputMeasurement == nil { return L10n.tr("音频分析等待数据") }
-    if let measurement = outputMeasurement, clock.timeIntervalSince(measurement.date) > 3 {
+    if !outputEnabled && !microphoneRunning { return L10n.tr("正在监测设备与连接") }
+    if (outputEnabled && outputMeasurement == nil) || (microphoneRunning && inputMeasurement == nil)
+    {
+      return L10n.tr("音频分析等待数据")
+    }
+    if (outputEnabled && outputMeasurement.map { clock.timeIntervalSince($0.date) > 3 } == true)
+      || (microphoneRunning
+        && inputMeasurement.map { clock.timeIntervalSince($0.date) > 3 } == true)
+    {
       return L10n.tr("音频采集暂无新数据")
     }
     return L10n.tr("已观测范围内未见持续异常")
@@ -88,12 +105,51 @@ import SonoskopeCore
   }
   var inputReading: String {
     if demoScenario != nil { return L10n.tr("未检测（模拟场景）") }
+    if automaticInputAuthorizing { return L10n.tr("等待麦克风授权或音频数据") }
+    if automaticInputEnabled {
+      if paused || sleeping { return L10n.tr("自动麦克风监测已暂停") }
+      switch automaticInputPolicy.state {
+      case .permissionRequired: return L10n.tr("需要麦克风权限；请在系统设置中允许后重试。")
+      case .unknown: return L10n.tr("无法确认输入设备使用状态；未采集")
+      case .ambiguous: return L10n.tr("多个输入设备活动；无法明确选择，未采集")
+      case .stopping: return L10n.tr("其他应用已停止使用麦克风，正在结束采集…")
+      case .waiting, .disabled, .suspended: return L10n.tr("自动待命 · 等待其他应用使用麦克风")
+      case .active: break
+      }
+      if let automaticError { return automaticError + L10n.tr(" · 稍后自动重试") }
+    }
     if microphoneRunning, let sample = inputMeasurement {
-      return String(format: L10n.tr("测试中 · %.0f dBFS"), sample.rmsDB)
+      guard clock.timeIntervalSince(sample.date) <= 3 else { return L10n.tr("麦克风暂无新数据") }
+      return String(
+        format: microphoneIsAutomatic ? L10n.tr("自动监测 · %.0f dBFS") : L10n.tr("测试中 · %.0f dBFS"),
+        sample.rmsDB)
     }
     return inputStatus
   }
-  @ObservationIgnored let notifications = NotificationService()
+  var automaticInputNeedsPermission: Bool {
+    automaticInputEnabled && !automaticInputAuthorizing && !microphoneAuthorized()
+  }
+  var currentInputDevice: AudioDeviceInfo? {
+    if let device = microphoneDevice {
+      return hardware.devices.first { $0.uid == device.uid }
+    }
+    return hardware.input
+  }
+  var inputDeviceRole: String {
+    microphoneDevice == nil ? L10n.tr("系统默认输入") : L10n.tr("正在采集的输入")
+  }
+  var inputDeviceDetail: String {
+    if demoScenario != nil { return L10n.tr("演示不采集麦克风") }
+    return inputDeviceRole + " · " + (currentInputDevice?.name ?? L10n.tr("无可用输入"))
+  }
+  var inputApplicationContext: String? {
+    guard let device = microphoneDevice else { return nil }
+    let users = hardware.inputUsers(of: device.id, observerPID: getpid())
+    if !users.isEmpty { return users.joined(separator: " · ") }
+    return microphoneIsAutomatic
+      ? L10n.tr("未观察到其他应用 · 结束缓冲") : L10n.tr("Sonoskope · 手动测试")
+  }
+  @ObservationIgnored lazy var notifications = NotificationService()
   @ObservationIgnored private let defaults: UserDefaults
   @ObservationIgnored private let store = IncidentStore()
   @ObservationIgnored private let persist: Bool
@@ -107,7 +163,11 @@ import SonoskopeCore
   @ObservationIgnored private let deviceMonitor = HardwareMonitor()
   @ObservationIgnored private let networkMonitor = NetworkMonitor()
   @ObservationIgnored private let outputCapture = OutputCapture()
-  @ObservationIgnored private let microphone = MicrophoneTest()
+  @ObservationIgnored private let microphone: any MicrophoneCapturing
+  @ObservationIgnored private let microphoneAuthorized: @MainActor () -> Bool
+  @ObservationIgnored private let requestMicrophoneAuthorization: @MainActor () async -> Bool
+  @ObservationIgnored private let readInputHardware: @MainActor () -> HardwareSnapshot
+  @ObservationIgnored private let runsCollectors: Bool
   @ObservationIgnored private var pollTask: Task<Void, Never>?
   @ObservationIgnored private var networkTask: Task<Void, Never>?
   @ObservationIgnored private var probeDegraded = false
@@ -119,43 +179,63 @@ import SonoskopeCore
   @ObservationIgnored private var sleepObserver: NSObjectProtocol?
   @ObservationIgnored private var sleeping = false
 
-  init(persist: Bool = true) {
+  init(
+    persist: Bool = true, microphone: (any MicrophoneCapturing)? = nil,
+    microphoneAuthorized: (@MainActor () -> Bool)? = nil,
+    requestMicrophoneAuthorization: (@MainActor () async -> Bool)? = nil,
+    readInputHardware: (@MainActor () -> HardwareSnapshot)? = nil,
+    runsCollectors: Bool = true
+  ) {
     self.persist = persist
+    self.microphone = microphone ?? MicrophoneCapture()
+    self.microphoneAuthorized =
+      microphoneAuthorized ?? { AVCaptureDevice.authorizationStatus(for: .audio) == .authorized }
+    self.requestMicrophoneAuthorization =
+      requestMicrophoneAuthorization ?? { await AVCaptureDevice.requestAccess(for: .audio) }
+    self.readInputHardware = readInputHardware ?? { AudioHAL.snapshot(includeBluetooth: false) }
+    self.runsCollectors = runsCollectors
     defaults =
       persist ? .standard : UserDefaults(suiteName: "Sonoskope.Tests." + UUID().uuidString)!
+    automaticInputEnabled = persist && defaults.bool(forKey: "automaticInput")
     bluetoothEnabled = defaults.bool(forKey: "bluetooth")
     networkEnabled = defaults.object(forKey: "network") as? Bool ?? true
     notificationsEnabled = defaults.bool(forKey: "notifications")
     retentionHours = defaults.object(forKey: "retention") as? Int ?? 24
     liveEngine = DiagnosticEngine(
       incidents: persist ? store.load(retentionHours: retentionHours) : [])
-    loginEnabled = SMAppService.mainApp.status == .enabled
+    loginEnabled = runsCollectors && SMAppService.mainApp.status == .enabled
     networkMonitor.onPath = { [weak self] path in self?.network.path = path }
+    guard runsCollectors else { return }
     wakeObserver = NSWorkspace.shared.notificationCenter.addObserver(
       forName: NSWorkspace.didWakeNotification, object: nil, queue: .main
     ) { [weak self] _ in
       Task { @MainActor in
-        guard let self else { return }
-        self.sleeping = false
-        self.deviceMonitor.reset()
-        self.network.samples = []
-        self.probeDegraded = false
-        if !self.paused && self.demoScenario == nil { self.startCollectors() }
-        self.receive(.init(kind: .lifecycle, source: "system", message: "系统唤醒，重新建立基线"))
+        self?.systemDidWake()
       }
     }
     sleepObserver = NSWorkspace.shared.notificationCenter.addObserver(
       forName: NSWorkspace.willSleepNotification, object: nil, queue: .main
     ) { [weak self] _ in
       Task { @MainActor in
-        self?.sleeping = true
-        self?.stopCollectors()
+        self?.systemWillSleep()
       }
     }
   }
+  func systemWillSleep() {
+    sleeping = true
+    stopCollectors()
+  }
+  func systemDidWake() {
+    sleeping = false
+    deviceMonitor.reset()
+    network.samples = []
+    probeDegraded = false
+    if !paused && demoScenario == nil { startCollectors() }
+    receive(.init(kind: .lifecycle, source: "system", message: "系统唤醒，重新建立基线"))
+  }
   func start() { if !paused && demoScenario == nil { startCollectors() } }
   private func startCollectors() {
-    guard !sleeping, pollTask == nil else { return }
+    guard runsCollectors, !sleeping, pollTask == nil else { return }
     deviceMonitor.reset()
     liveEngine.resetObservationWindow()
     lastAudioEvent.removeAll()
@@ -165,8 +245,7 @@ import SonoskopeCore
       while !Task.isCancelled {
         guard let self else { return }
         let (snapshot, events, active) = self.deviceMonitor.poll(bluetooth: self.bluetoothEnabled)
-        self.hardware = snapshot
-        self.clock = Date()
+        self.acceptHardwareSnapshot(snapshot)
         for event in events { self.receive(event, audioActive: active) }
         if self.outputEnabled
           && events.contains(where: { $0.kind == .formatChanged || $0.kind == .routeChanged })
@@ -197,9 +276,14 @@ import SonoskopeCore
     networkMonitor.stop()
     captureGeneration = UUID()
     outputCapture.stop()
-    stopMicrophone()
+    stopMicrophoneCapture()
+    automaticInputPolicy.suspend()
+    lastAutomaticTarget = nil
   }
   func shutdown() {
+    automaticAuthorizationGeneration = UUID()
+    automaticInputAuthorizing = false
+    paused = true
     stopCollectors()
     save()
   }
@@ -336,45 +420,147 @@ import SonoskopeCore
             ?? LocalizedText(verbatim: error.localizedDescription)))
     }
   }
+  func setAutomaticInputEnabled(_ enabled: Bool) {
+    guard !enabled || demoScenario == nil else { return }
+    automaticAuthorizationGeneration = UUID()
+    let token = automaticAuthorizationGeneration
+    automaticInputAuthorizing = false
+    automaticInputEnabled = enabled
+    if persist { defaults.set(enabled, forKey: "automaticInput") }
+    automaticError = nil
+    automaticRetryAfter = nil
+    lastAutomaticTarget = nil
+    automaticInputPolicy.suspend()
+    stopMicrophoneCapture()
+    guard enabled else { return }
+    automaticInputAuthorizing = true
+    Task { [weak self] in
+      guard let self else { return }
+      let granted = await self.requestMicrophoneAuthorization()
+      guard self.automaticAuthorizationGeneration == token, self.automaticInputEnabled
+      else { return }
+      self.automaticInputAuthorizing = false
+      if !granted { self.automaticError = L10n.tr("需要麦克风权限；请在系统设置中允许后重试。") }
+      guard !self.paused, !self.sleeping, self.demoScenario == nil else { return }
+      self.acceptHardwareSnapshot(self.readInputHardware())
+    }
+  }
+  func acceptHardwareSnapshot(_ snapshot: HardwareSnapshot) {
+    hardware = snapshot
+    clock = snapshot.timestamp
+    reconcileAutomaticInput()
+  }
+  private func reconcileAutomaticInput() {
+    let devices = hardware.devices.filter {
+      $0.inputChannels > 0 && $0.sampleRate > 0 && !$0.uid.isEmpty
+    }
+    .map { InputDevice(id: $0.id, uid: $0.uid, sampleRate: $0.sampleRate) }
+    let desired = automaticInputPolicy.update(
+      enabled: automaticInputEnabled,
+      suspended: paused || sleeping || demoScenario != nil
+        || (microphoneRunning && !microphoneIsAutomatic),
+      authorized: microphoneAuthorized(),
+      processes: hardware.inputProcesses, devices: devices, defaultInput: hardware.defaultInput,
+      observerPID: getpid(), observerBundleID: "lab.kuraudo.Sonoskope", at: clock)
+    if desired != lastAutomaticTarget {
+      automaticRetryAfter = nil
+      automaticError = nil
+      lastAutomaticTarget = desired
+    }
+    if microphoneIsAutomatic && microphoneDevice != desired { stopMicrophoneCapture() }
+    guard let desired else { return }
+    if microphoneIsAutomatic, microphoneRunning,
+      clock.timeIntervalSince(inputMeasurement?.date ?? microphoneStartedAt) > 5
+    {
+      stopMicrophoneCapture()
+      automaticError = L10n.tr("麦克风暂无新数据；已停止采集，稍后重试。")
+      automaticRetryAfter = clock.addingTimeInterval(10)
+    }
+    guard !microphoneRunning, automaticRetryAfter.map({ clock >= $0 }) ?? true else { return }
+    automaticError = nil
+    beginMicrophone(device: desired, automatic: true)
+  }
   func startMicrophone() {
-    audioHistory.breakSeries("input")
-    guard demoScenario == nil, !paused, !microphoneRunning else { return }
-    microphoneGeneration = UUID()
+    guard demoScenario == nil, !paused, !sleeping, !microphoneRunning, !automaticInputEnabled else {
+      return
+    }
+    let snapshot = readInputHardware()
+    guard let input = snapshot.input, input.inputChannels > 0 else {
+      inputStatus = L10n.tr("输入设备不可用；已停止采集。")
+      return
+    }
+    beginMicrophone(
+      device: .init(id: input.id, uid: input.uid, sampleRate: input.sampleRate), automatic: false)
+  }
+  private func beginMicrophone(device: InputDevice, automatic: Bool) {
+    stopMicrophoneCapture()
     let token = microphoneGeneration
     microphoneRunning = true
+    microphoneIsAutomatic = automatic
+    microphoneDevice = device
+    microphoneStartedAt = Date()
     inputMeasurement = nil
-    inputStatus = L10n.tr("等待麦克风权限／开始测试")
+    inputStatus = L10n.tr("等待麦克风授权或音频数据")
     lastAudioEvent[.input] = nil
-    Task { [self] in
-      guard microphoneGeneration == token, microphoneRunning, !paused, demoScenario == nil else {
-        return
-      }
-      await microphone.start(
+    lastCaptureFault[.input] = nil
+    Task { [weak self] in
+      guard let self, self.microphoneGeneration == token, self.microphoneRunning,
+        !self.paused, !self.sleeping, self.demoScenario == nil
+      else { return }
+      await self.microphone.start(
+        deviceID: device.id, duration: automatic ? nil : 10,
+        requestPermission: !automatic,
         onMeasurement: { [weak self] sample in
-          guard let self, self.microphoneGeneration == token, self.microphoneRunning else { return }
+          guard let self, self.microphoneGeneration == token, self.microphoneRunning,
+            !self.paused, !self.sleeping, self.demoScenario == nil
+          else { return }
           self.inputMeasurement = sample
           self.handle(sample, direction: .input)
         },
-        onEnd: { [weak self] message in
+        onEnd: { [weak self] end in
           guard let self, self.microphoneGeneration == token else { return }
-          self.microphoneRunning = false
-          self.inputStatus = message
-          if let sample = self.inputMeasurement {
-            self.inputStatus += String(format: L10n.tr(" 最后电平 %.0f dBFS。"), sample.rmsDB)
+          let lastLevel = self.inputMeasurement?.rmsDB
+          self.stopMicrophoneCapture()
+          switch end {
+          case .completed:
+            self.inputStatus = L10n.tr("10 秒本地测试已结束。结果不代表远端听感。")
+            if let lastLevel {
+              self.inputStatus += String(format: L10n.tr(" 最后电平 %.0f dBFS。"), lastLevel)
+            }
+          case .permissionDenied:
+            self.inputStatus = L10n.tr("需要麦克风权限；请在系统设置中允许后重试。")
+          case .configurationChanged:
+            self.inputStatus = L10n.tr("输入设备配置变化；已停止采集。")
+          case .failed(let message): self.inputStatus = message
+          }
+          if automatic {
+            self.automaticError = self.inputStatus
+            self.automaticRetryAfter = Date().addingTimeInterval(10)
           }
         })
     }
   }
   func stopMicrophone() {
+    if automaticInputEnabled { setAutomaticInputEnabled(false) } else { stopMicrophoneCapture() }
+  }
+  private func stopMicrophoneCapture() {
     microphoneGeneration = UUID()
     microphone.stop()
-    if microphoneRunning { inputStatus = L10n.tr("测试已停止；结果仅代表本地输入") }
+    if microphoneRunning { inputStatus = L10n.tr("麦克风采集已停止") }
     microphoneRunning = false
+    microphoneIsAutomatic = false
+    microphoneDevice = nil
+    inputMeasurement = nil
+    audioHistory.breakSeries("input")
   }
   private func handle(_ sample: AudioMeasurement, direction: Direction) {
     audioHistory.append(
       value: sample.discontinuity ? nil : sample.rmsDB, source: direction.rawValue,
-      date: sample.date, maximumGap: 2)
+      date: sample.date, maximumGap: 2,
+      context: direction == .input ? inputApplicationContext : nil)
+    let eventSource =
+      direction == .input
+      ? microphoneDevice.map { "input:\($0.uid)" } ?? "input" : direction.rawValue
     if sample.discontinuity {
       if lastCaptureFault[direction] == nil
         || sample.date.timeIntervalSince(lastCaptureFault[direction]!) > 10
@@ -382,7 +568,7 @@ import SonoskopeCore
         lastCaptureFault[direction] = sample.date
         receive(
           .init(
-            kind: .captureUnavailable, direction: direction, source: direction.rawValue,
+            kind: .captureUnavailable, direction: direction, source: eventSource,
             message: "采集时间戳不连续；不能把它直接归为耳机播放中断"))
       }
       return
@@ -391,7 +577,7 @@ import SonoskopeCore
       lastCaptureFault[direction] = nil
       receive(
         .init(
-          kind: .captureRestored, direction: direction, source: direction.rawValue,
+          kind: .captureRestored, direction: direction, source: eventSource,
           message: "采集时间戳恢复连续；不代表端到端音质正常"))
     }
     if let last = lastAudioEvent[direction], sample.date.timeIntervalSince(last) < 1 { return }
@@ -401,7 +587,7 @@ import SonoskopeCore
       lastAudioEvent[direction] = sample.date
       receive(
         .init(
-          kind: kind, direction: direction, source: direction.rawValue,
+          kind: kind, direction: direction, source: eventSource,
           message: kind == .clipping
             ? "近满幅样本超过 2%；可能削波或内容本身如此" : "活动音频之间出现 40–250 ms 近静音缺口；只是启发式线索", date: sample.date),
         audioActive: true)

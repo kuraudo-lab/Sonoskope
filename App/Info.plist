@@ -13,9 +13,9 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.1.2</string>
+	<string>0.1.3</string>
 	<key>CFBundleVersion</key>
-	<string>3</string>
+	<string>4</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>14.2</string>
 	<key>LSUIElement</key>
@@ -23,7 +23,7 @@
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Analyze local microphone audio only when you start a test. No recordings are saved or uploaded.</string>
+	<string>Analyze local microphone levels when you enable automatic monitoring and another app uses an input device, or when you start a test. No recordings are saved or uploaded.</string>
 	<key>NSAudioCaptureUsageDescription</key>
 	<string>Analyze app output audio for suspected interruptions. Only metrics are kept; no recordings are saved or uploaded.</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>
