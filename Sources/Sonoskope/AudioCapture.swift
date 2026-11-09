@@ -193,6 +193,17 @@ enum MicrophoneCaptureEnd {
     onEnd: @escaping @MainActor (MicrophoneCaptureEnd) -> Void) async
   func stop()
 }
+struct MicrophoneConfiguration {
+  let deviceID: AudioDeviceID
+  let format: AVAudioFormat
+  func requiresStop(
+    running: Bool, currentDeviceID: AudioDeviceID?, currentFormat: AVAudioFormat,
+    deviceAlive: Bool
+  ) -> Bool {
+    !running || !deviceAlive || currentDeviceID != deviceID || !format.isEqual(currentFormat)
+  }
+}
+
 @MainActor final class MicrophoneCapture: MicrophoneCapturing {
   typealias End = MicrophoneCaptureEnd
   private var engine: AVAudioEngine?
@@ -270,6 +281,24 @@ enum MicrophoneCaptureEnd {
     ) { [weak self] _ in
       Task { @MainActor in
         guard let self, self.generation == token else { return }
+        var currentDevice: AudioDeviceID = 0
+        var propertySize = UInt32(MemoryLayout<AudioDeviceID>.size)
+        var status = kAudioHardwareBadObjectError
+        if let currentUnit = engine.inputNode.audioUnit {
+          status = AudioUnitGetProperty(
+            currentUnit, kAudioOutputUnitProperty_CurrentDevice,
+            kAudioUnitScope_Global, 0, &currentDevice, &propertySize)
+        }
+        let baseline = MicrophoneConfiguration(deviceID: deviceID, format: format)
+        // Device binding can enqueue a startup notification that arrives after start().
+        // Keep a healthy, unchanged capture; real route/format/stopped-engine changes still stop it.
+        guard
+          baseline.requiresStop(
+            running: engine.isRunning, currentDeviceID: status == noErr ? currentDevice : nil,
+            currentFormat: engine.inputNode.outputFormat(forBus: 0),
+            deviceAlive: AudioHAL.scalar(
+              deviceID, kAudioDevicePropertyDeviceIsAlive, default: UInt32(0)) != 0)
+        else { return }
         self.stop()
         onEnd(.configurationChanged)
       }

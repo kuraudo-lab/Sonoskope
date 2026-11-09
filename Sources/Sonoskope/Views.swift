@@ -58,6 +58,13 @@ struct StatusView: View {
                 ? L10n.tr("本机数字输出；不是扬声器实际发声。")
                 : L10n.tr("演示不采集应用输出"))
           }
+          if model.automaticInputNeedsPermission {
+            VStack(alignment: .leading, spacing: 6) {
+              Button(L10n.tr("重新检查麦克风权限")) { model.setAutomaticInputEnabled(true) }
+              Text(L10n.tr("若未弹出授权提示，请到系统设置 → 隐私与安全性 → 麦克风中允许 Sonoskope。"))
+                .font(.caption).foregroundStyle(.secondary)
+            }
+          }
           Divider()
           VStack(alignment: .leading, spacing: 10) {
             EvidenceRow(label: L10n.tr("蓝牙"), value: bluetoothSummary)
@@ -314,6 +321,7 @@ struct SettingsView: View {
         Text(model.inputReading).font(.caption).foregroundStyle(.secondary)
         if model.automaticInputNeedsPermission {
           Button(L10n.tr("重新检查麦克风权限")) { model.setAutomaticInputEnabled(true) }
+          Text(L10n.tr("若未弹出授权提示，请到系统设置 → 隐私与安全性 → 麦克风中允许 Sonoskope。"))
         }
       }
       Section(L10n.tr("采集范围")) {
@@ -371,7 +379,7 @@ struct SettingsView: View {
       Section {
         Text(
           L10n.tr(
-            "Sonoskope \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1.3") · macOS 14.2+\n系统层诊断；不使用 Zoom／Teams 接口。"
+            "Sonoskope \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1.4") · macOS 14.2+\n系统层诊断；不使用 Zoom／Teams 接口。"
           )
         ).font(.caption)
           .foregroundStyle(.secondary)

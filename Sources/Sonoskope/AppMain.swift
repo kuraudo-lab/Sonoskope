@@ -35,7 +35,9 @@ import SwiftUI
   private var settingsWindow: NSWindow?
   func applicationDidFinishLaunching(_ notification: Notification) {
     let smoke = CommandLine.arguments.contains("--smoke-test")
-    model = MonitorModel(persist: !smoke)
+    // Explicit bounded hardware check; never enabled by the passive smoke test or CI.
+    let microphoneCheck = !smoke && CommandLine.arguments.contains("--microphone-check")
+    model = MonitorModel(persist: !smoke && !microphoneCheck)
     model.notifications.openIncident = { [weak self] id in
       self?.model.selectedIncidentID = id
       self?.showStatus()
@@ -48,9 +50,10 @@ import SwiftUI
     statusItem.button?.action = #selector(statusClicked)
     statusItem.button?.sendAction(on: [.leftMouseUp, .rightMouseUp])
     model.start()
-    if smoke {
+    if microphoneCheck { model.startMicrophone() }
+    if smoke || microphoneCheck {
       Task {
-        try? await Task.sleep(for: .seconds(7))
+        try? await Task.sleep(for: .seconds(microphoneCheck ? 12 : 7))
         let payload: [String: Any] = [
           "application": "Sonoskope",
           "interfaceLanguage": L10n.language.rawValue,
@@ -64,6 +67,10 @@ import SwiftUI
           "audioProcessCount": model.hardware.processes.count,
           "networkPath": model.network.path, "probe": model.network.probe,
           "microphoneRunning": model.microphoneRunning,
+          "inputStatus": model.inputReading,
+          "inputChartValues": model.audioHistory.points.filter {
+            $0.source == "input" && $0.value != nil
+          }.count,
           "automaticInputEnabled": model.automaticInputEnabled,
           "inputUsageAvailable": model.hardware.inputProcesses != nil,
           "activeInputProcessCount": model.hardware.inputProcesses?.filter {

@@ -66,6 +66,7 @@ import SonoskopeCore
   var title: String {
     if demoScenario != nil { return L10n.tr("场景演示 · 模拟数据") }
     if paused { return L10n.tr("监测已暂停") }
+    if automaticInputNeedsPermission { return L10n.tr("麦克风监测需要授权") }
     if let incident = activeIncidents.first(where: {
       $0.confidence == .suspected || $0.key.hasPrefix("deviceDisconnected:")
     }) {

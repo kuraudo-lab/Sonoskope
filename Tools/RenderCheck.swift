@@ -91,6 +91,17 @@ import SwiftUI
       SettingsView(model: automatic),
       to: destination.appendingPathComponent("automatic-settings.png"),
       size: NSSize(width: 540, height: 760))
+    let denied = MonitorModel(
+      persist: false, microphone: RenderInputCapture(), microphoneAuthorized: { false },
+      requestMicrophoneAuthorization: { false }, readInputHardware: { fixture },
+      runsCollectors: false)
+    denied.setAutomaticInputEnabled(true)
+    for _ in 0..<12 { await Task.yield() }
+    try render(
+      StatusView(model: denied, openSettings: {}),
+      to: destination.appendingPathComponent("microphone-permission.png"),
+      size: NSSize(width: 520, height: 740))
+    denied.shutdown()
     automatic.shutdown()
     model.shutdown()
     print(

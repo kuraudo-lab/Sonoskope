@@ -297,3 +297,7 @@
 "应用变化" = "App change";
 
 "标签表示使用此麦克风的应用；不是各应用的独立音量。点击曲线可查看过去的应用。" = "Labels show apps using this microphone, not separate app volumes. Select the chart to inspect earlier apps.";
+
+"麦克风监测需要授权" = "Microphone monitoring needs permission";
+
+"若未弹出授权提示，请到系统设置 → 隐私与安全性 → 麦克风中允许 Sonoskope。" = "If no prompt appears, allow Sonoskope in System Settings → Privacy & Security → Microphone.";

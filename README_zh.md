@@ -32,6 +32,8 @@ open dist/Sonoskope.app
 
 左键点击菜单栏波形图标打开状态窗口；右键可进入设置或退出。关闭窗口后仍会继续监测。
 
+反复本地构建时，可使用有效的 Apple 签名证书，避免每次 ad-hoc 签名变化后重新授权。优先读取 `SONOSKOPE_SIGN_IDENTITY`，也可将证书名称或指纹写入被 Git 忽略的 `.local/signing-identity`。此配置不影响 CI 签名；开发证书也不等同于公开分发所需的 Developer ID。
+
 ## 功能
 
 - 每两秒读取 Core Audio 设备、默认路由、格式和音频进程活动。结合近期使用的设备及音频活动判断断连。

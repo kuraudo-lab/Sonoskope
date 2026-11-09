@@ -30,6 +30,8 @@ Open `Package.swift` in Xcode for editing. The build script assembles an actual 
 
 Left-click the menu-bar waveform to open status; right-click for settings and quit. Closing a window leaves monitoring running.
 
+For repeated local development builds, use a valid Apple signing certificate to avoid a new ad-hoc identity on each rebuild. `SONOSKOPE_SIGN_IDENTITY` takes precedence; alternatively, store the certificate name or fingerprint in the ignored `.local/signing-identity` file. This does not change CI signing or make a development certificate suitable for public distribution.
+
 ## What works
 
 - Real Core Audio device/default-route/format snapshots and audio process activity, sampled every two seconds. Disconnect incidents are scoped to recently used/default devices and audio activity.

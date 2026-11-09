@@ -16,6 +16,12 @@ for localization in App/*.lproj; do
   cp -R "$localization" "$app_path/Contents/Resources/"
 done
 test -d "$app_path/Contents/Resources/Sonoskope_SonoskopeCore.bundle"
-/usr/bin/codesign --force --sign "${SONOSKOPE_SIGN_IDENTITY:--}" "$app_path"
+# A local certificate preserves the app identity across development rebuilds.
+# CI has no local override and continues using the documented ad-hoc distribution signature.
+sign_identity="${SONOSKOPE_SIGN_IDENTITY:-}"
+if [[ -z "$sign_identity" && -f .local/signing-identity ]]; then
+  sign_identity="$(cat .local/signing-identity)"
+fi
+/usr/bin/codesign --force --sign "${sign_identity:--}" "$app_path"
 /usr/bin/codesign --verify --strict "$app_path"
 printf '%s\n' "$app_path"

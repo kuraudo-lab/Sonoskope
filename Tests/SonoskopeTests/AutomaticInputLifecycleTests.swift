@@ -265,6 +265,20 @@ final class AutomaticInputLifecycleTests: XCTestCase {
     XCTAssertFalse(model.microphoneRunning)
     model.shutdown()
   }
+  @MainActor func testMissingPermissionIsVisibleInTheMainStatus() async {
+    let mic = FakeMicrophone()
+    let hardware = snapshot()
+    let model = MonitorModel(
+      persist: false, microphone: mic, microphoneAuthorized: { false },
+      requestMicrophoneAuthorization: { false }, readInputHardware: { hardware },
+      runsCollectors: false)
+    model.setAutomaticInputEnabled(true)
+    await settle()
+    XCTAssertEqual(model.title, L10n.tr("麦克风监测需要授权"))
+    XCTAssertTrue(model.automaticInputNeedsPermission)
+    XCTAssertTrue(mic.calls.isEmpty)
+    model.shutdown()
+  }
   @MainActor func testPermissionRevocationStopsCapture() async {
     let mic = FakeMicrophone()
     let hardware = snapshot()

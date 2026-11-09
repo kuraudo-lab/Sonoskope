@@ -40,3 +40,9 @@ Automated tests and offscreen render fixtures do not substitute for these physic
 - [Apple TN2091: device input with the HAL output audio unit](https://developer.apple.com/library/archive/technotes/tn2091/_index.html)
 
 The installed Core Audio SDK header defines the process device property's input/output scope behavior. The collector preserves unavailable reads rather than guessing on systems that cannot supply an association.
+
+## Engine notifications and hardware check
+
+Binding input can queue an `AVAudioEngineConfigurationChange` notification that arrives after `start()` succeeds. A notification alone is not proof that capture is invalid. The collector keeps capture only when the engine is still running, the selected device remains alive and bound, and its format is unchanged. An unreadable or changed state stops capture; the existing automatic policy/backoff handles a subsequent restart.
+
+For an explicit physical check, run the packaged app with `--microphone-check`. This requests microphone permission, captures the default input for at most ten seconds and exits after reporting the metric count and completion status. It does not save PCM or modify monitoring preferences. Do not add this command to unattended CI. `--smoke-test` remains passive.
