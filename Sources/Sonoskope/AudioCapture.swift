@@ -144,8 +144,10 @@ final class CallbackAnalyzer {
       try check(
         AudioHardwareCreateAggregateDevice(configuration as CFDictionary, &aggregate),
         "AudioHardwareCreateAggregateDevice")
-      let sink = CallbackAnalyzer { measurement in Task { @MainActor in onMeasurement(measurement) }
+      let delivery = MeasurementDelivery { measurement in
+        MainActor.assumeIsolated { onMeasurement(measurement) }
       }
+      let sink = CallbackAnalyzer { delivery.submit($0) }
       self.sink = sink
       let captureFormat = format
       try check(
@@ -263,7 +265,10 @@ struct MicrophoneConfiguration {
       onEnd(.failed(L10n.tr("输入设备不可用或格式不受支持。")))
       return
     }
-    let sink = CallbackAnalyzer { measurement in Task { @MainActor in onMeasurement(measurement) } }
+    let delivery = MeasurementDelivery { measurement in
+      MainActor.assumeIsolated { onMeasurement(measurement) }
+    }
+    let sink = CallbackAnalyzer { delivery.submit($0) }
     self.sink = sink
     input.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, time in
       sink.accept(

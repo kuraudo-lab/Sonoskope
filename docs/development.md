@@ -55,3 +55,35 @@ See [Recording the product demo](demo-recording.md) for the isolated native pres
 ## Distribution signing
 
 See [Developer ID signing and notarization](distribution.md). Local preview builds keep their existing signing behavior. Public distribution requires explicit credentials and never falls back to a preview after failure.
+
+## Monitoring responsiveness and relaunch checks
+
+Hardware polling runs serially off the UI thread. A cancelled poll is discarded before
+updating model state. Audio callbacks retain at most one pending metric window per
+capture; if UI delivery falls behind, the replacement window is marked as a collector
+discontinuity, not a suspected acoustic defect. Raw audio is never queued or saved.
+
+The global output-analysis opt-in now survives relaunch. This is a preference, not a
+cached permission grant: macOS remains responsible for system-audio authorization.
+A single-process selection is not automatically restored because Core Audio process
+IDs are session-local; it must never silently broaden into global capture. Demo
+arguments are resolved before restored collectors start.
+
+Visible app windows use regular activation so privacy dialogs have an ordinary app
+activation context. A Dock icon is present while windows are open; closing the last
+window returns the app to menu-bar-only mode. This needs a native check with the OS
+permission prompt (including Allow, Deny, and intentionally switching to another app).
+Automated tests do not verify TCC persistence or macOS window ordering.
+
+Regression tests: `swift test --filter MonitoringRegressionTests`. They cover relaunch
+preferences, scope preservation, off-main hardware reads, and 10,000 metric windows
+arriving while UI delivery is stalled. A real hours-long soak with input/output,
+Bluetooth transitions, and the Trends page is still required to confirm the reported
+freeze is fully resolved. Do not equate this queue stress test with that soak.
+
+When checking repeated system-audio prompts, compare `codesign -d -r-` for the installed
+app and the locally built app. Apple Development and Developer ID signatures can
+have different designated requirements even for the same bundle ID. Use the same
+identity as the installed build in `.local/signing-identity`; do not reset privacy
+permissions as part of build verification. The local signing file is intentionally
+ignored by Git and must be configured separately on another machine.

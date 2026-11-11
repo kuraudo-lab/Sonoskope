@@ -59,6 +59,12 @@ import SwiftUI
     statusItem.button?.target = self
     statusItem.button?.action = #selector(statusClicked)
     statusItem.button?.sendAction(on: [.leftMouseUp, .rightMouseUp])
+    // Resolve demo mode before starting any restored live opt-ins.
+    if !smoke && !microphoneCheck,
+      let index = CommandLine.arguments.firstIndex(of: "--demo"),
+      CommandLine.arguments.count > index + 1,
+      let scenario = DemoScenario(rawValue: CommandLine.arguments[index + 1])
+    { model.runDemo(scenario) }
     model.start()
     if microphoneCheck { model.startMicrophone() }
     if smoke || microphoneCheck {
@@ -100,12 +106,6 @@ import SwiftUI
         NSApp.terminate(nil)
       }
     } else {
-      if let index = CommandLine.arguments.firstIndex(of: "--demo"),
-        CommandLine.arguments.count > index + 1,
-        let scenario = DemoScenario(rawValue: CommandLine.arguments[index + 1])
-      {
-        model.runDemo(scenario)
-      }
       if !CommandLine.arguments.contains("--background") {
         if model.demoScenario == nil && onboarding.shouldPresent {
           showGettingStarted()
@@ -168,8 +168,7 @@ import SwiftUI
           openUpdates: { [weak self] in self?.showUpdates() },
           openSettings: { [weak self] in self?.showSettings() }))
     }
-    statusWindow?.makeKeyAndOrderFront(nil)
-    NSApp.activate(ignoringOtherApps: true)
+    present(statusWindow)
   }
   @objc func showGettingStarted() {
     if gettingStartedWindow == nil {
@@ -186,8 +185,7 @@ import SwiftUI
           openSettings: { [weak self] in self?.showSettings() }))
       gettingStartedWindow?.delegate = self
     }
-    gettingStartedWindow?.makeKeyAndOrderFront(nil)
-    NSApp.activate(ignoringOtherApps: true)
+    present(gettingStartedWindow)
   }
   @objc func showSettings() {
     if settingsWindow == nil {
@@ -195,16 +193,21 @@ import SwiftUI
         title: L10n.tr("Sonoskope · 设置"), size: NSSize(width: 540, height: 700),
         view: SettingsView(model: model, updater: updater, openUpdates: { [weak self] in self?.showUpdates() }))
     }
-    settingsWindow?.makeKeyAndOrderFront(nil)
-    NSApp.activate(ignoringOtherApps: true)
+    present(settingsWindow)
   }
   @objc func showUpdates() {
     if updateWindow == nil {
       updateWindow = window(title: L10n.tr("软件更新"), size: NSSize(width: 520, height: 400), view: SoftwareUpdateView(updater: updater))
     }
-    updateWindow?.makeKeyAndOrderFront(nil)
-    NSApp.activate(ignoringOtherApps: true)
+    present(updateWindow)
     updater.check()
+  }
+  private func present(_ window: NSWindow?) {
+    // A visible settings window needs normal application activation while macOS
+    // presents privacy UI. Accessory apps can hand focus back to the prior app.
+    NSApp.setActivationPolicy(.regular)
+    NSApp.activate(ignoringOtherApps: true)
+    window?.makeKeyAndOrderFront(nil)
   }
   private func window<V: View>(title: String, size: NSSize, view: V) -> NSWindow {
     let window = NSWindow(
@@ -213,12 +216,19 @@ import SwiftUI
     )
     window.title = title
     window.isReleasedWhenClosed = false
+    window.delegate = self
     window.contentView = NSHostingView(rootView: view.environment(\.locale, L10n.locale))
     window.center()
     return window
   }
   func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
   func windowWillClose(_ notification: Notification) {
+    if let closing = notification.object as? NSWindow,
+      ![statusWindow, settingsWindow, gettingStartedWindow, updateWindow]
+        .compactMap({ $0 }).contains(where: { $0 !== closing && $0.isVisible })
+    {
+      NSApp.setActivationPolicy(.accessory)
+    }
     if let window = notification.object as? NSWindow, window === gettingStartedWindow {
       // Closing is a skip; replay creates a fresh guide without changing capture.
       onboarding.acknowledge()

@@ -13,6 +13,8 @@ import xml.etree.ElementTree as ET
 with open('App/Info.plist', 'rb') as f:
     info = plistlib.load(f)
 version, build = info['CFBundleShortVersionString'], info['CFBundleVersion']
+release_notes = (Path('docs/releases') / f'{version}.md').read_text()
+summary = next(line.strip() for line in release_notes.splitlines() if line.strip() and not line.startswith('#'))
 signer = Path('.build/artifacts/sonoskope/Sparkle/bin/sign_update')
 keygen = signer.with_name('generate_keys')
 public_key = subprocess.check_output([str(keygen), '--account', 'lab.kuraudo.Sonoskope', '-p'], text=True).strip()
@@ -33,7 +35,7 @@ for architecture in ['arm64', 'x86_64']:
     ET.SubElement(item, '{'+sparkle+'}version').text = build
     ET.SubElement(item, '{'+sparkle+'}shortVersionString').text = version
     ET.SubElement(item, '{'+sparkle+'}minimumSystemVersion').text = '14.2'
-    ET.SubElement(item, 'description').text = 'First-run guide, a compact Overview / Trends / Issues workspace, and signed updates that install only when you choose Install and Relaunch.'
+    ET.SubElement(item, 'description').text = summary
     ET.SubElement(item, 'enclosure', url=f'https://github.com/kuraudo-lab/Sonoskope/releases/download/v{version}/{archive.name}',
                   length=str(archive.stat().st_size), type='application/octet-stream',
                   attrib={'{'+sparkle+'}edSignature': signature})

@@ -4,7 +4,7 @@ import Foundation
 import IOBluetooth
 import SonoskopeCore
 
-struct AudioDeviceInfo: Identifiable, Equatable {
+struct AudioDeviceInfo: Identifiable, Equatable, Sendable {
   let id: AudioObjectID
   let uid: String
   let name: String
@@ -16,7 +16,7 @@ struct AudioDeviceInfo: Identifiable, Equatable {
   let bufferFrames: UInt32
   let running: Bool
 }
-struct AudioProcessInfo: Identifiable, Equatable {
+struct AudioProcessInfo: Identifiable, Equatable, Sendable {
   let id: AudioObjectID
   let pid: pid_t
   let bundleID: String
@@ -26,12 +26,12 @@ struct AudioProcessInfo: Identifiable, Equatable {
   let outputDevices: [AudioObjectID]
   let inputDevices: [AudioObjectID]
 }
-struct BluetoothInfo: Identifiable {
+struct BluetoothInfo: Identifiable, Sendable {
   var id: String { name }
   let name: String
   let rssi: Int?
 }
-struct HardwareSnapshot {
+struct HardwareSnapshot: Sendable {
   var devices: [AudioDeviceInfo] = []
   var processes: [AudioProcessInfo] = []
   var defaultInput: AudioObjectID = 0
@@ -136,7 +136,7 @@ enum AudioHAL {
     default: L10n.tr("其他")
     }
   }
-  @MainActor static func snapshot(includeBluetooth: Bool) -> HardwareSnapshot {
+  static func snapshot(includeBluetooth: Bool) -> HardwareSnapshot {
     let system = AudioObjectID(kAudioObjectSystemObject)
     var result = HardwareSnapshot()
     result.defaultInput = scalar(
@@ -206,8 +206,7 @@ enum AudioHAL {
   private var previous: HardwareSnapshot?
   private var missing: [String: AudioDeviceInfo] = [:]
   // Polling is intentionally honest: brief reconnects between snapshots can be missed.
-  func poll(bluetooth: Bool) -> (HardwareSnapshot, [DiagnosticEvent], Bool) {
-    let next = AudioHAL.snapshot(includeBluetooth: bluetooth)
+  func poll(snapshot next: HardwareSnapshot) -> (HardwareSnapshot, [DiagnosticEvent], Bool) {
     var events: [DiagnosticEvent] = []
     let wasActive = previous?.audioActive ?? false
     if let old = previous {

@@ -163,6 +163,7 @@ import SonoskopeCore
     return demoScenario == nil ? liveEngine : demoEngine
   }
   @ObservationIgnored private let deviceMonitor = HardwareMonitor()
+  @ObservationIgnored private let hardwareReader = HardwareReader()
   @ObservationIgnored private let networkMonitor: any NetworkProbing
   private(set) var networkAudioActive = false
   @ObservationIgnored private var nextProbeAt = Date.distantPast
@@ -189,7 +190,8 @@ import SonoskopeCore
     microphoneAuthorized: (@MainActor () -> Bool)? = nil,
     requestMicrophoneAuthorization: (@MainActor () async -> Bool)? = nil,
     readInputHardware: (@MainActor () -> HardwareSnapshot)? = nil,
-    runsCollectors: Bool = true, networkMonitor: (any NetworkProbing)? = nil
+    runsCollectors: Bool = true, networkMonitor: (any NetworkProbing)? = nil,
+    settings: UserDefaults? = nil
   ) {
     self.networkMonitor = networkMonitor ?? NetworkMonitor()
     self.persist = persist
@@ -201,8 +203,9 @@ import SonoskopeCore
     self.readInputHardware = readInputHardware ?? { AudioHAL.snapshot(includeBluetooth: false) }
     self.runsCollectors = runsCollectors
     defaults =
-      persist ? .standard : UserDefaults(suiteName: "Sonoskope.Tests." + UUID().uuidString)!
-    automaticInputEnabled = persist && defaults.bool(forKey: "automaticInput")
+      settings ?? (persist ? .standard : UserDefaults(suiteName: "Sonoskope.Tests." + UUID().uuidString)!)
+    automaticInputEnabled = (persist || settings != nil) && defaults.bool(forKey: "automaticInput")
+    outputEnabled = defaults.bool(forKey: "outputAnalysis")
     bluetoothEnabled = defaults.bool(forKey: "bluetooth")
     networkEnabled = defaults.object(forKey: "network") as? Bool ?? true
     notificationsEnabled = defaults.bool(forKey: "notifications")
@@ -250,7 +253,9 @@ import SonoskopeCore
     pollTask = Task { [weak self] in
       while !Task.isCancelled {
         guard let self else { return }
-        let (snapshot, events, active) = self.deviceMonitor.poll(bluetooth: self.bluetoothEnabled)
+        let reading = await self.hardwareReader.snapshot(bluetooth: self.bluetoothEnabled)
+        guard !Task.isCancelled, !self.paused, !self.sleeping, self.demoScenario == nil else { return }
+        let (snapshot, events, active) = self.deviceMonitor.poll(snapshot: reading)
         self.acceptHardwareSnapshot(snapshot)
         for event in events { self.receive(event, audioActive: active) }
         if self.outputEnabled
@@ -410,13 +415,15 @@ import SonoskopeCore
     }
   }
   func setOutputEnabled(_ enabled: Bool) {
+    guard enabled != outputEnabled else { return }
     outputEnabled = enabled
+    if demoScenario == nil { defaults.set(enabled && selectedProcess == 0, forKey: "outputAnalysis") }
     outputMeasurement = nil
     updateNetworkActivity()
     lastAudioEvent[.output] = nil
     captureGeneration = UUID()
     outputCapture.stop()
-    if enabled && !paused && demoScenario == nil {
+    if enabled && runsCollectors && !paused && demoScenario == nil {
       startOutput()
     } else {
       outputStatus = enabled ? L10n.tr("等待恢复监测") : L10n.tr("未开启音频分析")
@@ -424,9 +431,13 @@ import SonoskopeCore
   }
   func selectProcess(_ id: UInt32) {
     selectedProcess = id
-    if outputEnabled { setOutputEnabled(true) }
+    // Process object IDs are session-local. Never restore a single-process opt-in
+    // as a broader global capture after relaunch.
+    if demoScenario == nil { defaults.set(outputEnabled && id == 0, forKey: "outputAnalysis") }
+    if outputEnabled && runsCollectors && !paused && demoScenario == nil { startOutput() }
   }
   private func startOutput() {
+    lastAudioEvent[.output] = nil
     audioHistory.breakSeries("output")
     captureGeneration = UUID()
     let token = captureGeneration
