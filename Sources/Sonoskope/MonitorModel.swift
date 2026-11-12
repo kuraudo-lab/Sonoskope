@@ -25,6 +25,9 @@ import SonoskopeCore
   @ObservationIgnored private var automaticAuthorizationGeneration = UUID()
   var paused = false
   var outputEnabled = false
+  private(set) var outputSilenceMinutes: Int
+  private(set) var outputSilencePauseMinutes: Int?
+  @ObservationIgnored private var outputSilencePolicy = OutputSilencePolicy()
   var bluetoothEnabled: Bool
   var networkEnabled: Bool
   var notificationsEnabled: Bool
@@ -91,6 +94,9 @@ import SonoskopeCore
   }
   var subtitle: String {
     if demoScenario != nil { return L10n.tr("真实采集与系统通知已暂停；演示不会写入历史。") }
+    if paused, let minutes = outputSilencePauseMinutes {
+      return L10n.tr("输出持续静音 \(minutes) 分钟，已自动暂停全部监测。点击恢复监测可重新开始。")
+    }
     if paused { return L10n.tr("以下是暂停前的记录，不代表当前状态。") }
     return L10n.tr("只分析本机可见证据；不代表远端听感或耳机实际发声。")
   }
@@ -206,6 +212,8 @@ import SonoskopeCore
       settings ?? (persist ? .standard : UserDefaults(suiteName: "Sonoskope.Tests." + UUID().uuidString)!)
     automaticInputEnabled = (persist || settings != nil) && defaults.bool(forKey: "automaticInput")
     outputEnabled = defaults.bool(forKey: "outputAnalysis")
+    let silenceMinutes = defaults.object(forKey: "outputSilenceMinutes") as? Int ?? 5
+    outputSilenceMinutes = (0...60).contains(silenceMinutes) ? silenceMinutes : 5
     bluetoothEnabled = defaults.bool(forKey: "bluetooth")
     networkEnabled = defaults.object(forKey: "network") as? Bool ?? true
     notificationsEnabled = defaults.bool(forKey: "notifications")
@@ -276,6 +284,7 @@ import SonoskopeCore
     if outputEnabled { startOutput() }
   }
   private func stopCollectors() {
+    outputSilencePolicy.reset()
     clock = Date()
     audioHistory.breakSeries("input")
     audioHistory.breakSeries("output")
@@ -304,6 +313,7 @@ import SonoskopeCore
       exitDemo()
       return
     }
+    outputSilencePauseMinutes = nil
     paused.toggle()
     if paused { stopCollectors() } else { startCollectors() }
   }
@@ -416,6 +426,7 @@ import SonoskopeCore
   }
   func setOutputEnabled(_ enabled: Bool) {
     guard enabled != outputEnabled else { return }
+    outputSilencePolicy.reset()
     outputEnabled = enabled
     if demoScenario == nil { defaults.set(enabled && selectedProcess == 0, forKey: "outputAnalysis") }
     outputMeasurement = nil
@@ -430,6 +441,7 @@ import SonoskopeCore
     }
   }
   func selectProcess(_ id: UInt32) {
+    outputSilencePolicy.reset()
     selectedProcess = id
     // Process object IDs are session-local. Never restore a single-process opt-in
     // as a broader global capture after relaunch.
@@ -437,6 +449,7 @@ import SonoskopeCore
     if outputEnabled && runsCollectors && !paused && demoScenario == nil { startOutput() }
   }
   private func startOutput() {
+    outputSilencePolicy.reset()
     lastAudioEvent[.output] = nil
     audioHistory.breakSeries("output")
     captureGeneration = UUID()
@@ -458,16 +471,7 @@ import SonoskopeCore
         guard let self, self.captureGeneration == token, self.outputEnabled, !self.paused,
           self.demoScenario == nil
         else { return }
-        let first = self.outputMeasurement == nil
-        self.outputMeasurement = sample
-        self.outputStatus = L10n.tr("正在分析本地输出")
-        if first {
-          self.receive(
-            .init(
-              kind: .captureRestored, direction: .output, source: "output",
-              message: "已收到采集回调；全静音仍不能证明权限或声音质量正常"))
-        }
-        self.handle(sample, direction: .output)
+        self.acceptOutputMeasurement(sample)
       }
     } catch {
       outputStatus = error.localizedDescription
@@ -476,6 +480,30 @@ import SonoskopeCore
           kind: .captureUnavailable, direction: .output, source: "output",
           message: (error as? CaptureError)?.diagnosticText
             ?? LocalizedText(verbatim: error.localizedDescription)))
+    }
+  }
+  func setOutputSilenceMinutes(_ minutes: Int) {
+    guard demoScenario == nil else { return }
+    outputSilenceMinutes = min(60, max(0, minutes))
+    defaults.set(outputSilenceMinutes, forKey: "outputSilenceMinutes")
+    outputSilencePolicy.reset()
+  }
+  func acceptOutputMeasurement(_ sample: AudioMeasurement, receivedAt now: Date = Date()) {
+    guard outputEnabled, !paused, !sleeping, demoScenario == nil else { return }
+    let age = now.timeIntervalSince(sample.date)
+    guard age >= 0, age <= 3 else { outputSilencePolicy.reset(); return }
+    let first = outputMeasurement == nil
+    outputMeasurement = sample
+    outputStatus = L10n.tr("正在分析本地输出")
+    if first {
+      receive(.init(kind: .captureRestored, direction: .output, source: "output",
+        message: "已收到采集回调；全静音仍不能证明权限或声音质量正常"))
+    }
+    handle(sample, direction: .output)
+    if outputSilencePolicy.observe(sample, timeout: Double(outputSilenceMinutes) * 60) {
+      outputSilencePauseMinutes = outputSilenceMinutes
+      paused = true
+      stopCollectors()
     }
   }
   func setAutomaticInputEnabled(_ enabled: Bool) {

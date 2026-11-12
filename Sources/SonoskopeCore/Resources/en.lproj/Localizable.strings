@@ -391,3 +391,8 @@
 "检查更新" = "Check for Updates";
 
 "检查更新…" = "Check for Updates…";
+"输出静音后自动暂停" = "Automatically pause after output silence";
+"不自动暂停" = "Never pause automatically";
+"%@ 分钟" = "%@ minutes";
+"默认 5 分钟。连续收到近零输出电平后暂停全部监测，需手动恢复；无数据不算静音。" = "Defaults to 5 minutes. Continuous near-zero output pauses all monitoring until you resume manually. Missing data is not silence.";
+"输出持续静音 %@ 分钟，已自动暂停全部监测。点击恢复监测可重新开始。" = "Output remained silent for %@ minutes. All monitoring is paused. Choose Resume monitoring to start again.";

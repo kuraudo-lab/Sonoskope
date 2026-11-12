@@ -48,3 +48,24 @@ Only diagnostic events/metrics are retained, never raw audio. Up to 100 incident
 Starting with v0.1.2, the interface follows the macOS preferred-language order and supports English and Chinese. The first supported preference is used; if none is supported, it falls back to English. Chinese regional/script variants share the Simplified Chinese translation. Restart Sonoskope after changing system or app language.
 
 Menus, settings, charts, notifications, permission descriptions, and diagnostics are localized. Incident history stores message keys and parameters and can be displayed in either language. Known v0.1.0 messages migrate on read; device/app names, system errors, and unknown historical text retain their original wording. The original v0.1.0 download remains unchanged.
+
+## Pause after sustained output silence
+
+Settings → Capture scope → Automatically pause after output silence defaults to
+5 minutes, accepts 1–60 minutes, and can be disabled. The preference is retained
+across launches. Only continuous, fresh output PCM metric windows with both RMS
+and peak at or below −100 dBFS count; 0 dBFS is full scale, not silence. This does
+not measure the system volume control or actual headset acoustic output.
+
+When the measured silence reaches the configured duration, all monitoring pauses:
+output capture, microphone capture, hardware polling and network probes stop.
+The status explains why it paused. Choose Resume monitoring to restart; audio
+cannot trigger automatic resumption while capture is stopped. The existing
+monitoring opt-ins are retained, and this pause applies to the current run.
+
+Sound, invalid/stale/discontinuous data, a callback gap over two seconds, a scope
+change, capture restart, pause, sleep or entering demo mode resets the timer.
+Missing data is never counted as silence. Demo readings do not trigger a live
+pause, and the timeout setting is disabled during demos. Tests simulate the
+threshold and lifecycle without recording audio; physical runtime acceptance
+remains separate.

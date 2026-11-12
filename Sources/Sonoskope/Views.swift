@@ -93,6 +93,15 @@ struct SettingsView: View {
           }
         }.disabled(model.demoScenario != nil)
         Text(L10n.tr("开启时请求系统音频录制权限。仅计算指标，不保存或上传录音。多应用混音无法区分参会者。"))
+        Picker(L10n.tr("输出静音后自动暂停"), selection: Binding(
+          get: { model.outputSilenceMinutes }, set: model.setOutputSilenceMinutes
+        )) {
+          Text(L10n.tr("不自动暂停")).tag(0)
+          ForEach(1...60, id: \.self) { minutes in
+            Text(L10n.tr("\(minutes) 分钟")).tag(minutes)
+          }
+        }.disabled(model.demoScenario != nil)
+        Text(L10n.tr("默认 5 分钟。连续收到近零输出电平后暂停全部监测，需手动恢复；无数据不算静音。"))
         Toggle(L10n.tr("读取已连接蓝牙设备的信号强度"), isOn: $model.bluetoothEnabled).onChange(
           of: model.bluetoothEnabled
         ) { _, _ in model.updateSettings() }
