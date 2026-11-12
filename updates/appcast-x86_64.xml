@@ -4,13 +4,13 @@
     <title>Sonoskope updates (x86_64)</title>
     <link>https://github.com/kuraudo-lab/Sonoskope/releases</link>
     <item>
-      <title>Sonoskope 0.2.1</title>
-      <pubDate>Wed, 11 Nov 2026 14:24:07 +0000</pubDate>
-      <sparkle:version>10</sparkle:version>
-      <sparkle:shortVersionString>0.2.1</sparkle:shortVersionString>
+      <title>Sonoskope 0.2.2</title>
+      <pubDate>Thu, 12 Nov 2026 08:33:45 +0000</pubDate>
+      <sparkle:version>11</sparkle:version>
+      <sparkle:shortVersionString>0.2.2</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>14.2</sparkle:minimumSystemVersion>
-      <description>Monitoring responsiveness improvements, restored output-analysis preferences, and improved window activation around permission dialogs.</description>
-      <enclosure sparkle:edSignature="G2H8n5GkkWjeMa52ZVAXIO/RiNEw1WyzgxfeluT5XOiJyGyKVvJZ+MVAzBO73338QlHDUPiOSh2yaShlEUTIDg==" url="https://github.com/kuraudo-lab/Sonoskope/releases/download/v0.2.1/Sonoskope-0.2.1-macos-x86_64.zip" length="3986494" type="application/octet-stream" />
+      <description>Automatically pause monitoring after sustained output silence, with a configurable timeout that defaults to five minutes.</description>
+      <enclosure sparkle:edSignature="hAhH4IEn7YKr7TRHRWMGGyjQwTFsrDxoFCl/92AFTVRVYmAQ4YOz1PGfvZTfPsbfoPO0Oursy/00oQ3MUnyXDw==" url="https://github.com/kuraudo-lab/Sonoskope/releases/download/v0.2.2/Sonoskope-0.2.2-macos-x86_64.zip" length="3996443" type="application/octet-stream" />
     </item>
   </channel>
 </rss>
