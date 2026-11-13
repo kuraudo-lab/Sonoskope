@@ -24,6 +24,8 @@ struct FloatingVisibilityPolicy {
 /// Close hides a retained window; it never terminates the application or its collectors.
 @MainActor final class ResidentWindowDelegate: NSObject, NSWindowDelegate {
   var onClose: (() -> Void)?
+  var onMove: (() -> Void)?
+  func windowWillMove(_ notification: Notification) { onMove?() }
   func windowShouldClose(_ sender: NSWindow) -> Bool {
     onClose?()
     sender.orderOut(nil)
@@ -39,13 +41,12 @@ struct FloatingVisibilityPolicy {
   private var policy = FloatingVisibilityPolicy()
   private let geometry = ActiveWindowGeometry()
   private var positioning: Task<Void, Never>?
-  private var lastPositionQuery = Date.distantPast
-  private var positionPID: pid_t?
   private var frontBounds: CGRect?
 
   init(model: MonitorModel) {
     self.model = model
     closeDelegate.onClose = { [weak self] in self?.closePanel() }
+    closeDelegate.onMove = { [weak self] in self?.positioning?.cancel() }
   }
   func start() {
     guard timer == nil else { return }
@@ -73,17 +74,23 @@ struct FloatingVisibilityPolicy {
       let window = NSPanel(contentRect: .init(x: 0, y: 0, width: 420, height: 350),
         styleMask: [.borderless, .closable, .nonactivatingPanel], backing: .buffered, defer: false)
       window.title = L10n.tr("Sonoskope · 监控浮窗")
-      window.level = .floating
+      window.isFloatingPanel = false
+      window.level = model.floatingMonitorAlwaysOnTop ? .floating : .normal
+      window.isMovable = true
+      window.isMovableByWindowBackground = true
       window.hidesOnDeactivate = false
       window.isReleasedWhenClosed = false
       window.isOpaque = false
       window.backgroundColor = .clear
       window.hasShadow = true
-      window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+      window.collectionBehavior = [.managed, .fullScreenNone]
       window.delegate = closeDelegate
 
       panel = window
+      positionPanelInitially()
     }
+    let requestedLevel: NSWindow.Level = model.floatingMonitorAlwaysOnTop ? .floating : .normal
+    if panel?.level != requestedLevel { panel?.level = requestedLevel }
     // Snapshot at 1 Hz: hidden windows do not rebuild charts on every audio callback.
     let view = FloatingMonitorView(audio: model.audioChartPoints, network: model.networkChartPoints,
       endingAt: model.chartEnd, audioEnabled: model.outputEnabled || model.microphoneRunning,
@@ -96,7 +103,6 @@ struct FloatingVisibilityPolicy {
     } else {
       panel?.contentView = NSHostingView(rootView: view)
     }
-    positionPanel()
     if panel?.isVisible != true { panel?.orderFrontRegardless() }
   }
   func closePanel() {
@@ -115,17 +121,18 @@ struct FloatingVisibilityPolicy {
       panel?.setFrameOrigin(FloatingPlacement.origin(in: screens[index].visibleFrame))
     }
   }
-  private func positionPanel() {
+  private func positionPanelInitially() {
     let pid = NSWorkspace.shared.frontmostApplication?.processIdentifier ?? getpid()
-    if pid != positionPID { frontBounds = nil; positionPID = pid; lastPositionQuery = .distantPast }
     placePanel()
-    guard positioning == nil, Date().timeIntervalSince(lastPositionQuery) >= 2 else { return }
-    lastPositionQuery = Date()
+    let initialOrigin = panel?.frame.origin
+    // One initial placement only. Refreshes, focus changes and re-showing a
+    // retained panel must not undo dragging or move it to another desktop.
     positioning = Task { [weak self, geometry] in
       let bounds = await geometry.bounds(pid: pid)
       guard let self else { return }
       self.positioning = nil
       guard !Task.isCancelled, self.panel?.isVisible == true,
+        self.panel?.isOnActiveSpace == true, self.panel?.frame.origin == initialOrigin,
         NSWorkspace.shared.frontmostApplication?.processIdentifier == pid else { return }
       self.frontBounds = bounds
       self.placePanel()
@@ -147,7 +154,9 @@ struct FloatingMonitorView: View {
     VStack(spacing: 6) {
       HStack {
         Text(L10n.tr("监控浮窗")).font(.caption.weight(.semibold))
-        Spacer()
+          .frame(maxWidth: .infinity, minHeight: 24, alignment: .leading)
+          .overlay(FloatingPanelDragRegion())
+          .help(L10n.tr("拖动以移动浮窗"))
         Button(action: pause) { Image(systemName: "pause.fill").frame(width: 26, height: 24) }
           .help(L10n.tr("暂停全部监测"))
           .accessibilityLabel(L10n.tr("暂停全部监测"))
@@ -164,5 +173,19 @@ struct FloatingMonitorView: View {
       .background(RoundedRectangle(cornerRadius: 14).fill(Color(nsColor: .windowBackgroundColor).opacity(opacity)))
       .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(.primary.opacity(0.12)))
       .environment(\.locale, L10n.locale)
+  }
+}
+
+/// A native drag surface on the header only; charts and buttons keep their input.
+struct FloatingPanelDragRegion: NSViewRepresentable {
+  func makeNSView(context: Context) -> FloatingPanelDragView { FloatingPanelDragView() }
+  func updateNSView(_ nsView: FloatingPanelDragView, context: Context) {}
+}
+final class FloatingPanelDragView: NSView {
+  override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+  override var mouseDownCanMoveWindow: Bool { true }
+  override func mouseDown(with event: NSEvent) { window?.performDrag(with: event) }
+  override func resetCursorRects() {
+    addCursorRect(bounds, cursor: .openHand)
   }
 }

@@ -98,14 +98,19 @@ it for this run; Pause stops all monitoring and hides the panel (resume from
 the main window). Background opacity is adjustable from 40–100%, defaults to 90%,
 and is persisted separately from visibility. Text, controls and curves stay opaque.
 
-It docks 18 points inside the upper-right corner of the active display's visible
+It initially docks 18 points inside the upper-right corner of the active display's visible
 frame. Frontmost-app window geometry chooses the display with the largest overlap;
-if unavailable, it falls back to the pointer display. Geometry is read on a serial
-background executor at most once every two seconds while visible, without screen
-images or Accessibility permission. Screen layout is re-read when applying the
-position. Synthetic tests cover negative display origins, vertically arranged
-screens, overlap selection and fallback. Physical multi-display switching and
-compositing over third-party applications still need runtime acceptance.
+if unavailable, it falls back to the pointer display. Geometry is read once on a
+background executor, without screen images or Accessibility permission. Drag the
+header to move the panel; refreshes and hiding/showing the retained panel preserve
+its position. A late geometry result cannot override a user move.
+
+The panel uses the normal window level by default. Settings offers a separate,
+persisted Keep floating monitor on top toggle that applies immediately. It belongs
+to the desktop where it first appears, without joining all Spaces or following
+desktop switches. Synthetic tests cover display geometry, window configuration,
+position preservation and the saved level preference. Physical dragging, Spaces
+switching and compositing over third-party applications still need runtime acceptance.
 
 Persistence verification: `bash scripts/check-floating-preferences.sh` builds an
 isolated fixture app (no collectors or production incident writes), then starts

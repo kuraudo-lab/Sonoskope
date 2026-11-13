@@ -68,6 +68,10 @@ struct SettingsView: View {
         Toggle(L10n.tr("有电平活动时显示浮窗"), isOn: Binding(
           get: { model.floatingMonitorEnabled }, set: model.setFloatingMonitorEnabled))
           .disabled(model.demoScenario != nil)
+        Toggle(L10n.tr("浮窗始终置顶"), isOn: Binding(
+          get: { model.floatingMonitorAlwaysOnTop }, set: model.setFloatingMonitorAlwaysOnTop))
+          .disabled(model.demoScenario != nil)
+        Text(L10n.tr("默认不置顶。拖动浮窗顶部可移动；浮窗留在首次显示的桌面，不跟随桌面切换。"))
         if model.floatingMonitorEnabled && model.floatingMonitorDismissed {
           Button(L10n.tr("重新显示浮窗")) { model.setFloatingMonitorEnabled(true) }
             .disabled(model.demoScenario != nil)

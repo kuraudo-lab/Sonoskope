@@ -199,3 +199,68 @@ extension FloatingMonitorTests {
     second.shutdown()
   }
 }
+
+extension FloatingMonitorTests {
+  @MainActor func testPanelDefaultsToNormalLevelSingleSpaceAndKeepsMovedPosition() {
+    _ = NSApplication.shared
+    let model = MonitorModel(persist: false, runsCollectors: false)
+    let controller = FloatingMonitorController(model: model)
+    model.setFloatingMonitorEnabled(true)
+    model.outputEnabled = true
+    model.outputMeasurement = sample(0)
+    controller.refresh(at: origin)
+    let panel = try! XCTUnwrap(controller.panel)
+    XCTAssertEqual(panel.level, .normal)
+    XCTAssertFalse(panel.isFloatingPanel)
+    XCTAssertTrue(panel.isMovableByWindowBackground)
+    XCTAssertTrue(panel.collectionBehavior.contains(.managed))
+    XCTAssertFalse(panel.collectionBehavior.contains(.canJoinAllSpaces))
+    XCTAssertFalse(panel.collectionBehavior.contains(.moveToActiveSpace))
+    XCTAssertFalse(panel.collectionBehavior.contains(.fullScreenAuxiliary))
+    let moved = CGPoint(x: 133, y: 177)
+    panel.setFrameOrigin(moved)
+    controller.refresh(at: origin)
+    XCTAssertEqual(panel.frame.origin, moved)
+    controller.closePanel()
+    model.setFloatingMonitorEnabled(true)
+    controller.refresh(at: origin)
+    XCTAssertEqual(panel.frame.origin, moved)
+    controller.stop()
+    model.shutdown()
+  }
+}
+
+extension FloatingMonitorTests {
+  @MainActor func testAlwaysOnTopDefaultsOffPersistsAndChangesExistingPanel() {
+    _ = NSApplication.shared
+    let suite = "Sonoskope.PanelLevel.\(UUID())"
+    let settings = UserDefaults(suiteName: suite)!
+    defer { settings.removePersistentDomain(forName: suite) }
+    let model = MonitorModel(persist: false, runsCollectors: false, settings: settings)
+    XCTAssertFalse(model.floatingMonitorAlwaysOnTop)
+    let controller = FloatingMonitorController(model: model)
+    model.setFloatingMonitorEnabled(true)
+    model.outputEnabled = true
+    model.outputMeasurement = sample(0)
+    controller.refresh(at: origin)
+    let panel = try! XCTUnwrap(controller.panel)
+    XCTAssertEqual(panel.level, .normal)
+    model.setFloatingMonitorAlwaysOnTop(true)
+    controller.refresh(at: origin)
+    XCTAssertTrue(controller.panel === panel)
+    XCTAssertEqual(panel.level, .floating)
+    XCTAssertFalse(panel.collectionBehavior.contains(.canJoinAllSpaces))
+    let restored = MonitorModel(persist: false, runsCollectors: false, settings: settings)
+    XCTAssertTrue(restored.floatingMonitorAlwaysOnTop)
+    model.setFloatingMonitorAlwaysOnTop(false)
+    controller.refresh(at: origin)
+    XCTAssertEqual(panel.level, .normal)
+    XCTAssertFalse(settings.bool(forKey: "floatingMonitorAlwaysOnTop"))
+    model.runDemo(.normal)
+    model.setFloatingMonitorAlwaysOnTop(true)
+    XCTAssertFalse(settings.bool(forKey: "floatingMonitorAlwaysOnTop"))
+    controller.stop()
+    model.shutdown()
+    restored.shutdown()
+  }
+}

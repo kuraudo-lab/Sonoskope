@@ -405,3 +405,6 @@
 "关闭浮窗" = "Close floating monitor";
 "重新显示浮窗" = "Show floating monitor again";
 "默认关闭。开关设置会保留。关闭浮窗仅在本次运行中隐藏，不会关闭开关或停止监测；可重新显示，或在下次启动后自动显示。" = "Off by default. Your preference is saved. Closing hides the panel for this run without disabling it or stopping monitoring. Show it again here, or it will appear on activity after relaunch.";
+"浮窗始终置顶" = "Keep floating monitor on top";
+"默认不置顶。拖动浮窗顶部可移动；浮窗留在首次显示的桌面，不跟随桌面切换。" = "Off by default. Drag the panel header to move it. The panel stays on the desktop where it first appears instead of following desktop switches.";
+"拖动以移动浮窗" = "Drag to move the floating monitor";

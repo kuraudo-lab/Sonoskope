@@ -31,6 +31,13 @@ import SonoskopeCore
     floatingMonitorDismissed = true
     onFloatingMonitorChange?()
   }
+  private(set) var floatingMonitorAlwaysOnTop: Bool
+  func setFloatingMonitorAlwaysOnTop(_ enabled: Bool) {
+    guard demoScenario == nil else { return }
+    floatingMonitorAlwaysOnTop = enabled
+    defaults.set(enabled, forKey: "floatingMonitorAlwaysOnTop")
+    onFloatingMonitorChange?()
+  }
   private(set) var floatingMonitorOpacity: Double
   func setFloatingMonitorOpacity(_ value: Double) {
     guard demoScenario == nil, value.isFinite else { return }
@@ -235,6 +242,7 @@ import SonoskopeCore
     automaticInputEnabled = (persist || settings != nil) && defaults.bool(forKey: "automaticInput")
     outputEnabled = defaults.bool(forKey: "outputAnalysis")
     floatingMonitorEnabled = defaults.bool(forKey: "floatingMonitor")
+    floatingMonitorAlwaysOnTop = defaults.bool(forKey: "floatingMonitorAlwaysOnTop")
     let opacity = defaults.object(forKey: "floatingMonitorOpacity") as? Double ?? 0.9
     floatingMonitorOpacity = opacity.isFinite ? min(1, max(0.4, opacity)) : 0.9
     let silenceMinutes = defaults.object(forKey: "outputSilenceMinutes") as? Int ?? 5
