@@ -69,3 +69,47 @@ Missing data is never counted as silence. Demo readings do not trigger a live
 pause, and the timeout setting is disabled during demos. Tests simulate the
 threshold and lifecycle without recording audio; physical runtime acceptance
 remains separate.
+
+## Resident windows and optional floating monitor
+
+Closing a main window hides it; monitoring and the menu-bar item remain alive.
+After opening a main window, the Dock icon also remains available. Clicking it or
+the menu-bar icon reopens status. Use Quit Sonoskope to terminate the application.
+
+The floating monitor is off by default and has a saved toggle in Settings. It
+reuses existing input/output and network metrics, without enabling collectors,
+requesting permissions or adding probes. Fresh input OR output above −100 dBFS
+(RMS or peak) shows a nonactivating floating panel. It hides after five minutes
+without measured activity; missing/invalid readings hide it separately, without
+claiming silence. Pause, sleep and demo mode hide it immediately. Closing its ×
+hides it for the current run without changing the saved preference or pausing
+monitoring. Settings offers Show floating monitor again. After relaunch, the saved
+opt-in is restored and fresh audio activity can show the panel again.
+
+The panel's five-minute hide timeout is independent of the configurable output
+silence auto-pause. If all monitoring auto-pauses, resume manually before new
+activity can show the panel again. Visible charts refresh at 1 Hz; hidden charts
+are not rebuilt. AppKit close/reopen and visibility policies have regression tests;
+real-device operation across Spaces/fullscreen and permission flows still need
+native acceptance checks.
+
+The floating panel is borderless and 420 × 350 points. Its own Close button hides
+it for this run; Pause stops all monitoring and hides the panel (resume from
+the main window). Background opacity is adjustable from 40–100%, defaults to 90%,
+and is persisted separately from visibility. Text, controls and curves stay opaque.
+
+It docks 18 points inside the upper-right corner of the active display's visible
+frame. Frontmost-app window geometry chooses the display with the largest overlap;
+if unavailable, it falls back to the pointer display. Geometry is read on a serial
+background executor at most once every two seconds while visible, without screen
+images or Accessibility permission. Screen layout is re-read when applying the
+position. Synthetic tests cover negative display origins, vertically arranged
+screens, overlap selection and fallback. Physical multi-display switching and
+compositing over third-party applications still need runtime acceptance.
+
+Persistence verification: `bash scripts/check-floating-preferences.sh` builds an
+isolated fixture app (no collectors or production incident writes), then starts
+separate processes to verify enable → quit → relaunch, enable → close panel → quit
+→ relaunch, and explicit disable → quit → relaunch. It uses a disposable defaults
+domain and removes it afterward. Existing preferences already saved as disabled
+are not automatically enabled; enable the setting once to choose that behavior.

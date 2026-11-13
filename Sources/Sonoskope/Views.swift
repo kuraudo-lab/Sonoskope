@@ -64,6 +64,24 @@ struct SettingsView: View {
           L10n.tr("登录后启动"), isOn: Binding(get: { model.loginEnabled }, set: { model.setLogin($0) }))
         Text(L10n.tr("在菜单栏运行。点击图标或问题提醒可打开音频状态。"))
       }
+      Section(L10n.tr("监控浮窗")) {
+        Toggle(L10n.tr("有电平活动时显示浮窗"), isOn: Binding(
+          get: { model.floatingMonitorEnabled }, set: model.setFloatingMonitorEnabled))
+          .disabled(model.demoScenario != nil)
+        if model.floatingMonitorEnabled && model.floatingMonitorDismissed {
+          Button(L10n.tr("重新显示浮窗")) { model.setFloatingMonitorEnabled(true) }
+            .disabled(model.demoScenario != nil)
+        }
+        HStack {
+          Text(L10n.tr("背景不透明度"))
+          Slider(value: Binding(get: { model.floatingMonitorOpacity }, set: model.setFloatingMonitorOpacity),
+            in: 0.4...1, step: 0.05)
+            .accessibilityLabel(L10n.tr("背景不透明度"))
+          Text("\(Int((model.floatingMonitorOpacity * 100).rounded()))%").monospacedDigit()
+            .frame(width: 42, alignment: .trailing)
+        }.disabled(model.demoScenario != nil)
+        Text(L10n.tr("默认关闭。开关设置会保留。关闭浮窗仅在本次运行中隐藏，不会关闭开关或停止监测；可重新显示，或在下次启动后自动显示。"))
+      }
       Section(L10n.tr("麦克风")) {
         Toggle(
           L10n.tr("自动监测麦克风电平"),

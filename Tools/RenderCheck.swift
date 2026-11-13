@@ -32,6 +32,11 @@ import SwiftUI
         size: NSSize(width: 640, height: 620))
     }
     model.runDemo(.correlated)
+    try render(
+      FloatingMonitorView(audio: model.audioChartPoints, network: model.networkChartPoints,
+        endingAt: model.chartEnd, audioEnabled: true, networkEnabled: true),
+      to: destination.appendingPathComponent("floating-monitor.png"),
+      size: NSSize(width: 420, height: 350))
     let navigation = StatusNavigation()
     navigation.section = .trends
     try render(

@@ -70,8 +70,9 @@ IDs are session-local; it must never silently broaden into global capture. Demo
 arguments are resolved before restored collectors start.
 
 Visible app windows use regular activation so privacy dialogs have an ordinary app
-activation context. A Dock icon is present while windows are open; closing the last
-window returns the app to menu-bar-only mode. This needs a native check with the OS
+activation context. After a window is opened, the Dock icon stays available when it is closed.
+Closing hides retained windows without stopping collectors; clicking the Dock icon
+reopens status. Background-only launch still starts as a menu-bar accessory. This needs a native check with the OS
 permission prompt (including Allow, Deny, and intentionally switching to another app).
 Automated tests do not verify TCC persistence or macOS window ordering.
 

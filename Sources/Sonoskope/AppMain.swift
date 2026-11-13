@@ -30,6 +30,7 @@ import SwiftUI
 
 @MainActor final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
   private var model: MonitorModel!
+  private var floatingMonitor: FloatingMonitorController?
   private let navigation = StatusNavigation()
   private let onboarding = OnboardingProgress()
   private let updater = SoftwareUpdater()
@@ -45,7 +46,10 @@ import SwiftUI
     model = MonitorModel(persist: !smoke && !microphoneCheck)
     updater.present = { [weak self] in self?.showUpdates() }
     updater.willInstall = { [weak self] in self?.model.shutdown() }
-    model.onDemoChange = { [weak self] active in self?.updater.setSuspended(active) }
+    model.onDemoChange = { [weak self] active in
+      self?.updater.setSuspended(active)
+      self?.floatingMonitor?.refresh()
+    }
     model.notifications.openIncident = { [weak self] id in
       guard let self else { return }
       if self.model.demoScenario != nil { self.model.exitDemo() }
@@ -114,6 +118,9 @@ import SwiftUI
         }
       }
       if model.demoScenario == nil { updater.start() }
+      floatingMonitor = FloatingMonitorController(model: model)
+      model.onFloatingMonitorChange = { [weak self] in self?.floatingMonitor?.refresh() }
+      floatingMonitor?.start()
     }
     let appMenu = NSMenu()
     let item = NSMenuItem()
@@ -222,18 +229,19 @@ import SwiftUI
     return window
   }
   func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
-  func windowWillClose(_ notification: Notification) {
-    if let closing = notification.object as? NSWindow,
-      ![statusWindow, settingsWindow, gettingStartedWindow, updateWindow]
-        .compactMap({ $0 }).contains(where: { $0 !== closing && $0.isVisible })
-    {
-      NSApp.setActivationPolicy(.accessory)
-    }
-    if let window = notification.object as? NSWindow, window === gettingStartedWindow {
-      // Closing is a skip; replay creates a fresh guide without changing capture.
-      onboarding.acknowledge()
-      gettingStartedWindow = nil
-    }
+  func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+    showStatus()
+    return true
   }
-  func applicationWillTerminate(_ notification: Notification) { model?.shutdown() }
+  func windowShouldClose(_ sender: NSWindow) -> Bool {
+    // Retain the regular activation policy after a window has been opened, so
+    // closing it leaves both the Dock and menu-bar entry available for reopening.
+    if sender === gettingStartedWindow { onboarding.acknowledge() }
+    sender.orderOut(nil)
+    return false
+  }
+  func applicationWillTerminate(_ notification: Notification) {
+    floatingMonitor?.stop()
+    model?.shutdown()
+  }
 }

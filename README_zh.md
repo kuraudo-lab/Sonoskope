@@ -14,7 +14,7 @@
 
 macOS 14.2+ · Apple Silicon 与 Intel · 中文与英文界面
 
-> **0.2.0 预览版：**Apple Silicon 与 Intel 下载包均已使用 Developer ID 签名并通过 Apple 公证。真实设备验证仍在完善，具体范围见[验证记录](docs/validation.md)。
+> **0.3.0 预览版：**Apple Silicon 与 Intel 下载包均已使用 Developer ID 签名并通过 Apple 公证。真实设备验证仍在完善，具体范围见[验证记录](docs/validation.md)。
 
 ## 看看声音中断前后发生了什么
 
@@ -37,7 +37,7 @@ macOS 14.2+ · Apple Silicon 与 Intel · 中文与英文界面
 
 ## 下载后，三步开始
 
-1. **安装应用。**前往[下载页](https://github.com/kuraudo-lab/Sonoskope/releases)，Apple Silicon 选择 `arm64`，Intel 选择 `x86_64`。下载并打开 DMG，将 Sonoskope 拖入 Applications，推出磁盘映像后从「应用程序」启动。也提供 PKG 和 ZIP。从 0.1.6 或更早版本升级时，请退出旧版，手动安装一次 0.2.0。
+1. **安装应用。**前往[下载页](https://github.com/kuraudo-lab/Sonoskope/releases)，Apple Silicon 选择 `arm64`，Intel 选择 `x86_64`。下载并打开 DMG，将 Sonoskope 拖入 Applications，推出磁盘映像后从「应用程序」启动。也提供 PKG 和 ZIP。从 0.1.6 或更早版本升级时，请退出旧版，手动安装一次 0.3.0。
 2. **选择监测内容。**首次启动的三步引导会介绍菜单栏应用并让你选择采集范围；可跳过，也可随时重新打开。设备和网络路径监测会自动开始。需要声音曲线时，可开启输出音频分析或自动麦克风监测，并按提示授予相应系统权限。
 3. **出问题时查看证据。**点击「刚才声音有问题」标记时间点，在「概览」查看当前状态，在「趋势」对照最近六十秒图表，在「问题」回看历史证据。读数为空表示没有可用数据，不代表声音正常。
 

@@ -25,6 +25,28 @@ import SonoskopeCore
   @ObservationIgnored private var automaticAuthorizationGeneration = UUID()
   var paused = false
   var outputEnabled = false
+  private(set) var floatingMonitorEnabled: Bool
+  private(set) var floatingMonitorDismissed = false
+  func dismissFloatingMonitor() {
+    floatingMonitorDismissed = true
+    onFloatingMonitorChange?()
+  }
+  private(set) var floatingMonitorOpacity: Double
+  func setFloatingMonitorOpacity(_ value: Double) {
+    guard demoScenario == nil, value.isFinite else { return }
+    floatingMonitorOpacity = min(1, max(0.4, value))
+    defaults.set(floatingMonitorOpacity, forKey: "floatingMonitorOpacity")
+    onFloatingMonitorChange?()
+  }
+  var monitoringSuspended: Bool { paused || sleeping || demoScenario != nil }
+  @ObservationIgnored var onFloatingMonitorChange: (() -> Void)?
+  func setFloatingMonitorEnabled(_ enabled: Bool) {
+    guard demoScenario == nil else { return }
+    floatingMonitorEnabled = enabled
+    floatingMonitorDismissed = false
+    defaults.set(enabled, forKey: "floatingMonitor")
+    onFloatingMonitorChange?()
+  }
   private(set) var outputSilenceMinutes: Int
   private(set) var outputSilencePauseMinutes: Int?
   @ObservationIgnored private var outputSilencePolicy = OutputSilencePolicy()
@@ -212,6 +234,9 @@ import SonoskopeCore
       settings ?? (persist ? .standard : UserDefaults(suiteName: "Sonoskope.Tests." + UUID().uuidString)!)
     automaticInputEnabled = (persist || settings != nil) && defaults.bool(forKey: "automaticInput")
     outputEnabled = defaults.bool(forKey: "outputAnalysis")
+    floatingMonitorEnabled = defaults.bool(forKey: "floatingMonitor")
+    let opacity = defaults.object(forKey: "floatingMonitorOpacity") as? Double ?? 0.9
+    floatingMonitorOpacity = opacity.isFinite ? min(1, max(0.4, opacity)) : 0.9
     let silenceMinutes = defaults.object(forKey: "outputSilenceMinutes") as? Int ?? 5
     outputSilenceMinutes = (0...60).contains(silenceMinutes) ? silenceMinutes : 5
     bluetoothEnabled = defaults.bool(forKey: "bluetooth")
@@ -284,6 +309,7 @@ import SonoskopeCore
     if outputEnabled { startOutput() }
   }
   private func stopCollectors() {
+    defer { onFloatingMonitorChange?() }
     outputSilencePolicy.reset()
     clock = Date()
     audioHistory.breakSeries("input")

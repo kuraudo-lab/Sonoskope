@@ -396,3 +396,12 @@
 "%@ 分钟" = "%@ minutes";
 "默认 5 分钟。连续收到近零输出电平后暂停全部监测，需手动恢复；无数据不算静音。" = "Defaults to 5 minutes. Continuous near-zero output pauses all monitoring until you resume manually. Missing data is not silence.";
 "输出持续静音 %@ 分钟，已自动暂停全部监测。点击恢复监测可重新开始。" = "Output remained silent for %@ minutes. All monitoring is paused. Choose Resume monitoring to start again.";
+"Sonoskope · 监控浮窗" = "Sonoskope · Floating Monitor";
+"监控浮窗" = "Floating monitor";
+"有电平活动时显示浮窗" = "Show floating monitor during audio activity";
+"默认关闭。显示已有音频与网络曲线；静默 5 分钟后隐藏。关闭浮窗会关闭此开关，不会停止监测。" = "Off by default. Shows existing audio and network charts; hides after 5 minutes of silence. Closing the panel disables this option without stopping monitoring.";
+"背景不透明度" = "Background opacity";
+"暂停全部监测" = "Pause all monitoring";
+"关闭浮窗" = "Close floating monitor";
+"重新显示浮窗" = "Show floating monitor again";
+"默认关闭。开关设置会保留。关闭浮窗仅在本次运行中隐藏，不会关闭开关或停止监测；可重新显示，或在下次启动后自动显示。" = "Off by default. Your preference is saved. Closing hides the panel for this run without disabling it or stopping monitoring. Show it again here, or it will appear on activity after relaunch.";
