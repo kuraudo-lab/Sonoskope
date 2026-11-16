@@ -5,6 +5,9 @@ source_image="$PWD/assets/brand/sonoskope-icon.png"
 mkdir -p .build
 icon_workspace="$(mktemp -d "$PWD/.build/app-icon.XXXXXX")"
 trap 'rm -rf "$icon_workspace"' EXIT
+# Bake the silhouette into the legacy icon resource, not individual app views.
+xcrun swift Tools/BuildIcon.swift "$source_image" "$icon_workspace/rounded-icon.png"
+source_image="$icon_workspace/rounded-icon.png"
 iconset="$icon_workspace/AppIcon.iconset"
 mkdir -p "$iconset"
 for size in 16 32 128 256 512; do

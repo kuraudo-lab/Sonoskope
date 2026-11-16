@@ -22,6 +22,16 @@ import SwiftUI
           "getting-started-" + String(step.rawValue + 1) + ".png"),
         size: NSSize(width: 640, height: 620))
     }
+    // Settings use an isolated live-mode fixture so demo disabling does not
+    // conceal label hierarchy. Capture every section in both appearances.
+    for (name, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
+      NSApp.appearance = NSAppearance(named: appearance)
+      try render(
+        SettingsView(model: welcome, updater: updater),
+        to: destination.appendingPathComponent("settings-" + name + ".png"),
+        size: NSSize(width: 540, height: 1900))
+    }
+    NSApp.appearance = NSAppearance(named: .aqua)
     welcome.shutdown()
     let model = MonitorModel(persist: false, runsCollectors: false)
     for scenario in DemoScenario.allCases {
