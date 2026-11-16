@@ -4,13 +4,13 @@
     <title>Sonoskope updates (x86_64)</title>
     <link>https://github.com/kuraudo-lab/Sonoskope/releases</link>
     <item>
-      <title>Sonoskope 0.3.1</title>
-      <pubDate>Fri, 13 Nov 2026 07:06:09 +0000</pubDate>
-      <sparkle:version>13</sparkle:version>
-      <sparkle:shortVersionString>0.3.1</sparkle:shortVersionString>
+      <title>Sonoskope 0.3.2</title>
+      <pubDate>Mon, 16 Nov 2026 10:44:40 +0000</pubDate>
+      <sparkle:version>14</sparkle:version>
+      <sparkle:shortVersionString>0.3.2</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>14.2</sparkle:minimumSystemVersion>
-      <description>The floating monitor now has an optional always-on-top setting, supports dragging, and stays on the desktop where it first appears.</description>
-      <enclosure sparkle:edSignature="5utw/QjO/eYYTPvjh2eQJP0+xJaqAwur5+oRT6bzch0IWkU0GbsbBjd2BvG4X3U10rWeNdAMeyxCSGlRM7/5BA==" url="https://github.com/kuraudo-lab/Sonoskope/releases/download/v0.3.1/Sonoskope-0.3.1-macos-x86_64.zip" length="4037638" type="application/octet-stream" />
+      <description>The app icon now has rounded corners, and Settings clearly separates control labels from explanatory text.</description>
+      <enclosure sparkle:edSignature="8O8f8gR5T3N99v9aqc4wzA0qCw3MvM2GltrEAE2GwNG1dmIv8HDnHwT/whzq3QA55hNNnEn+w+anvBsgDX0aAA==" url="https://github.com/kuraudo-lab/Sonoskope/releases/download/v0.3.2/Sonoskope-0.3.2-macos-x86_64.zip" length="3654258" type="application/octet-stream" />
     </item>
   </channel>
 </rss>
